@@ -10,7 +10,6 @@
 #include <tuple>
 
 #define GLM_FORCE_SWIZZLE
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #define GLM_LEFT_HANDED
 
 #include <cxxopts.hpp>
@@ -19,18 +18,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "stb_image_write.h"
+#include "bar.hpp"
+#include "img.hpp"
+#include "prof.hpp"
+
+// PROF_STREAM_FILE("prof.json");
 
 using namespace glm;
-
-
-template <class Traits, class CharT, class UnaryFunction>
-std::string regex_replace(const std::string &s,
-                          const std::basic_regex<CharT, Traits> &re,
-                          UnaryFunction f) {
-  return regex_replace(s.cbegin(), s.cend(), re, f);
-}
-} // namespace std
 
 #ifdef DOUBLE_PERC
 typedef glm::dvec3 Vec3;
@@ -62,9 +56,9 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(500, 500);
+static uvec2 resolution = uvec2(100, 100);
 static std::size_t maximum_depth = 10;
-static std::size_t spp = 512;
+static std::size_t spp = 128;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 
@@ -75,296 +69,6 @@ std::uniform_real_distribution<Float> dist(0.0f, 1.0f);
 std::uniform_real_distribution<Float> dist2(-1.0f, 1.0f);
 inline Float frand() { return dist(gen); }
 inline Float frand2() { return dist2(gen); }
-
-class ProgressBar {
-public:
-  ProgressBar(const std::size_t &n, const std::string &desc = "")
-      : n(0), total(n), tp(std::chrono::system_clock::now()), desc(desc) {
-    display();
-  }
-
-  static std::size_t display_len(const std::string &str) {
-    std::size_t len = 0;
-    bool skip = false;
-    for (std::size_t i = 0; i < str.size(); ++i) {
-      if (str[i] == '\033')
-        skip = true;
-      else if (skip && str[i] == 'm')
-        skip = false;
-      else
-        len++;
-    }
-    return len;
-  }
-  static std::string format_sizeof(const float &number) {
-    float num = number;
-    for (auto &&unit : {' ', 'k', 'M', 'G', 'T', 'P', 'E', 'Z'}) {
-      if (std::abs(num) < 999.5) {
-        if (std::abs(num) < 99.95) {
-          if (std::abs(num) < 9.995) {
-
-            return fmt::format("{:1.2f}", num) + unit;
-          }
-          return fmt::format("{:2.1f}", num) + unit;
-        }
-        return fmt::format("{:3.1f}", num) + unit;
-      }
-      num /= 1000;
-    }
-    return fmt::format("{0:3.1}Y", num);
-  }
-  static std::string format_interval(const std::size_t &s) {
-    auto mins_secs = std::div(s, 60);
-    auto hours_mins = std::div(mins_secs.quot, 60);
-    if (hours_mins.quot != 0) {
-      return fmt::format("{0:d}:{1:02d}:{2:02d}", hours_mins.quot,
-                         hours_mins.rem, mins_secs.rem);
-    } else {
-      return fmt::format("{0:02d}:{1:02d}", hours_mins.rem, mins_secs.rem);
-    }
-  }
-  template <typename T> static std::string format_number(const T &num) {
-    std::string f = fmt::format("{:.3g}", num);
-    if (f.find("+0") != std::string::npos)
-      f.replace(f.find("+0"), 2, "+");
-    if (f.find("-0") != std::string::npos)
-      f.replace(f.find("-0"), 2, "-");
-    std::string n = fmt::format("{}", num);
-    return (f.size() < n.size()) ? f : n;
-  }
-  static std::string format_color(const char &spec, const char &msg) {
-    switch (spec) {
-    case 'k':
-      return fmt::format("\033[30m{}\033[0m", msg);
-    case 'r':
-      return fmt::format("\033[31m{}\033[0m", msg);
-    case 'g':
-      return fmt::format("\033[32m{}\033[0m", msg);
-    case 'y':
-      return fmt::format("\033[33m{}\033[0m", msg);
-    case 'b':
-      return fmt::format("\033[34m{}\033[0m", msg);
-    case 'm':
-      return fmt::format("\033[35m{}\033[0m", msg);
-    case 'c':
-      return fmt::format("\033[36m{}\033[0m", msg);
-    case 'w':
-      return fmt::format("\033[37m{}\033[0m", msg);
-    case 'K':
-      return fmt::format("\033[1;30m{}\033[0m", msg);
-    case 'R':
-      return fmt::format("\033[1;31m{}\033[0m", msg);
-    case 'G':
-      return fmt::format("\033[1;32m{}\033[0m", msg);
-    case 'Y':
-      return fmt::format("\033[1;33m{}\033[0m", msg);
-    case 'B':
-      return fmt::format("\033[1;34m{}\033[0m", msg);
-    case 'M':
-      return fmt::format("\033[1;35m{}\033[0m", msg);
-    case 'C':
-      return fmt::format("\033[1;36m{}\033[0m", msg);
-    case 'W':
-      return fmt::format("\033[1;37m{}\033[0m", msg);
-    case '*':
-      return fmt::format("\033[1m{}\033[0m", msg);
-    default:
-      return fmt::format("{:c}", msg);
-    }
-  }
-  static std::string format_color(const char &spec, const std::string &msg) {
-    switch (spec) {
-    case 'k':
-      return fmt::format("\033[30m{}\033[0m", msg);
-    case 'r':
-      return fmt::format("\033[31m{}\033[0m", msg);
-    case 'g':
-      return fmt::format("\033[32m{}\033[0m", msg);
-    case 'y':
-      return fmt::format("\033[33m{}\033[0m", msg);
-    case 'b':
-      return fmt::format("\033[34m{}\033[0m", msg);
-    case 'm':
-      return fmt::format("\033[35m{}\033[0m", msg);
-    case 'c':
-      return fmt::format("\033[36m{}\033[0m", msg);
-    case 'w':
-      return fmt::format("\033[37m{}\033[0m", msg);
-    case 'K':
-      return fmt::format("\033[1;30m{}\033[0m", msg);
-    case 'R':
-      return fmt::format("\033[1;31m{}\033[0m", msg);
-    case 'G':
-      return fmt::format("\033[1;32m{}\033[0m", msg);
-    case 'Y':
-      return fmt::format("\033[1;33m{}\033[0m", msg);
-    case 'B':
-      return fmt::format("\033[1;34m{}\033[0m", msg);
-    case 'M':
-      return fmt::format("\033[1;35m{}\033[0m", msg);
-    case 'C':
-      return fmt::format("\033[1;36m{}\033[0m", msg);
-    case 'W':
-      return fmt::format("\033[1;37m{}\033[0m", msg);
-    case '*':
-      return fmt::format("\033[1m{}\033[0m", msg);
-    default:
-      return msg;
-    }
-  }
-  static std::string format_bar(const float &frac, const std::size_t len,
-                                const std::string &chars = "[#>-]",
-                                const std::string &colors = "*___*") {
-    std::size_t bar_length = std::floor(frac * len);
-    std::string bar(bar_length, chars[1]);
-    if (bar_length < len) {
-      return format_color(colors[0], chars[0]) + format_color(colors[1], bar) +
-             format_color(colors[2], chars[2]) +
-             format_color(colors[3],
-                          std::string(len - bar_length - 1, chars[3])) +
-             format_color(colors[4], chars[4]);
-    } else {
-      return format_color(colors[0], chars[0]) + format_color(colors[1], bar) +
-             format_color(colors[4], chars[4]);
-    }
-  }
-
-  inline void next(std::size_t i = 1) {
-    n += i;
-    std::chrono::system_clock::time_point now_tp =
-        std::chrono::system_clock::now();
-    elapsed +=
-        std::chrono::duration_cast<std::chrono::milliseconds>(now_tp - tp)
-            .count() /
-        1e3;
-    tp = now_tp;
-  }
-  inline void display() {
-    std::string elapsed_str = format_interval(elapsed);
-    float rate = n / elapsed;
-    float inv_rate = 1 / rate;
-    std::string rate_noinv_str =
-        (unit_scale ? format_sizeof(rate) : fmt::format("{:5.2f}", rate)) +
-        unit + "/s";
-    std::string rate_inv_str = (unit_scale ? format_sizeof(inv_rate)
-                                           : fmt::format("{:5.2f}", inv_rate)) +
-                               "s/" + unit;
-    std::string rate_str = inv_rate > 1 ? rate_inv_str : rate_noinv_str;
-    std::string n_str = unit_scale ? format_sizeof(n) : fmt::format("{}", n);
-    std::string total_str =
-        unit_scale ? format_sizeof(total) : fmt::format("{}", total);
-    float remaining = (total - n) / rate;
-    std::string remaining_str = format_interval(remaining);
-
-    float frac = static_cast<float>(n) / static_cast<float>(total);
-    float percentage = frac * 100.0;
-
-    std::string meter = format_spec;
-    std::smatch results;
-    try {
-      std::regex tmp("\\{percentage\\}");
-    } catch (std::regex_error &e) {
-      std::fprintf(stderr, "Regex: %s\n", e.what());
-    }
-    meter = std::regex_replace(
-        meter,
-        std::regex("\\{percentage(:([0-9]+)?(\\.([0-9]+))?)?(;(["
-                   "krgybmcwKRGYBMCW\\*_]+))?\\}"),
-        [percentage](const std::smatch &match) {
-          std::string fmt_spec =
-              "{:" + (match[2].matched ? match[2].str() : "") +
-              (match[4].matched ? "." + match[4].str() : "") + "f}";
-          return format_color(match[5].matched ? match[5].str()[0] : '_',
-                              fmt::format(fmt_spec, percentage));
-        });
-    for (std::string &&key :
-         {"n", "total", "elapsed", "remaining", "rate", "bar", "desc"}) {
-      meter = std::regex_replace(
-          meter,
-          std::regex("\\{" + key +
-                     "(:(<|^|>)?([0-9]+)?)?(;([krgybmcKRGYBMCW\\*_]+))?\\}"),
-          [key, n_str, total_str, elapsed_str, remaining_str, rate_str, frac,
-           this](const std::smatch &match) {
-            std::string val = "";
-            char align = match[2].matched ? match[2].str()[0] : '>';
-            int fmt_width = match[3].matched ? std::stoi(match[3]) : -1;
-            std::string fmt_color = match[5].matched ? match[5].str() : "_____";
-            if (key == "n") {
-              val = n_str;
-            } else if (key == "total") {
-              val = total_str;
-            } else if (key == "elapsed") {
-              val = elapsed_str;
-            } else if (key == "remaining") {
-              val = remaining_str;
-            } else if (key == "rate") {
-              val = rate_str;
-            } else if (key == "bar") {
-              if (fmt_color.size() < 5) {
-                fmt_color +=
-                    std::string(5 - fmt_color.size(), fmt_color.back());
-              }
-              val = format_bar(frac, fmt_width != -1 ? fmt_width : 20,
-                               this->bar_chars, fmt_color);
-            } else if (key == "desc") {
-              val = this->desc;
-            }
-            if (fmt_width != -1 &&
-                static_cast<int>(display_len(val)) < fmt_width) {
-              std::size_t str_disp_len = display_len(val);
-              if (align == '<') {
-                val = val + std::string(fmt_width - str_disp_len, ' ');
-              } else if (align == '^') {
-                val = std::string((fmt_width - str_disp_len) / 2, ' ') + val +
-                      std::string((fmt_width - str_disp_len) / 2, ' ');
-
-              } else {
-                val = std::string(fmt_width - str_disp_len, ' ') + val;
-              }
-            }
-            return format_color(fmt_color[0], val);
-          });
-    }
-    std::fprintf(stdout, "\033[2K\033[1G%s\033[0m", meter.c_str());
-    std::fflush(stdout);
-  }
-
-  inline void update(std::size_t i = 1) {
-    next(i);
-    display();
-  }
-  inline void finish() {
-    next(total - n);
-    display();
-  }
-
-  std::size_t n, total;
-  float elapsed = 0.0f;
-  std::chrono::system_clock::time_point tp;
-
-  bool unit_scale = false;
-  std::string desc;
-  std::string unit = "it";
-  std::string bar_chars = "[=>-]";
-  std::string format_spec = "{desc;W} {percentage:3.0}% {bar:40;WCCcW} "
-                            "{n}/{total} [{elapsed}<{remaining}, {rate;B}]";
-};
-
-// File writing interface
-void write_file(const std::string &file_desc, const uvec2 &res,
-                const uint8_t *raw) {
-  stbi_flip_vertically_on_write(true);
-  if (file_desc.ends_with(".png")) {
-    stbi_write_png(file_desc.c_str(), res.x, res.y, 3, raw,
-                   res.x * 3 * sizeof(uint8_t));
-  } else if (file_desc.ends_with(".bmp")) {
-    stbi_write_bmp(file_desc.c_str(), res.x, res.y, 3, raw);
-  } else if (file_desc.ends_with(".tga")) {
-    stbi_write_tga(file_desc.c_str(), res.x, res.y, 3, raw);
-  } else if (file_desc.ends_with(".jpg")) {
-    stbi_write_jpg(file_desc.c_str(), res.x, res.y, 3, raw, 75);
-  }
-}
 
 void ons(const Vec3 &v1, Vec3 &v2, Vec3 &v3) {
   if (abs(v1.x) > abs(v1.y)) {
@@ -551,6 +255,7 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
 }
 
 void render() {
+  PROF_FUNC("renderer");
   ProgressBar bar(resolution.y * resolution.x);
   bar.unit_scale = true;
   bar.unit = "px";
@@ -560,8 +265,9 @@ void render() {
   Mat4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
   Float filmz = resolution.x / (2.0f * tan(fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-#pragma omp parallel for shared(buffer, bar)
+#pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
   for (std::size_t i = 0; i < resolution.x * resolution.y; ++i) {
+    PROF_SCOPED("pixel", "renderer");
     std::size_t x = i % resolution.x;
     std::size_t y = i / resolution.x;
     vec3 color(0.0f, 0.0f, 0.0f);
@@ -585,6 +291,8 @@ void render() {
 }
 
 int main(int argc, char *argv[]) {
+  PROF_BEGIN("cxxopts", "main", "argc", argc, "argv",
+             std::vector<std::string>(argv + 1, argv + argc));
   cxxopts::Options options("trm", "Tiny Ray Marcher");
   options.show_positional_help();
   options.add_options()(
@@ -597,6 +305,8 @@ int main(int argc, char *argv[]) {
     std::cout << options.help() << std::endl;
     return 0;
   }
+  PROF_END();
+  PROF_BEGIN("scene", "main");
 
   camera.pos = Vec3(0.0f, 0.0f, 0.01f);
   camera.up = Vec3(0.0f, 1.0f, 0.0f);
@@ -616,13 +326,11 @@ int main(int argc, char *argv[]) {
       sdfSphere(0.5, matSpec({1.0, 1.0, 1.0}))->translate(-0.5, -1.5, 2.0));
   objects.push_back(sdfSphere(0.5, matRefr(1.5, {1.0, 1.0, 1.0}))
                         ->translate(-1.0, -1.5, 3.0));
-  // objects.push_back(
-  //     sdfSphere(0.5, matRefr(1.5, {1.0, 1.0, 1.0}))->translate(0.0,
-  //     0.0, 2.0));
 
-  render();
-
-  std::cout << "Output = " << result["output"].as<std::string>() << std::endl;
+  PROF_END();
+  for (std::size_t i = 0; i < 10; ++i) {
+    render();
+  }
 
   return 0;
 }
