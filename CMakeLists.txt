@@ -2,9 +2,10 @@
 # PROJECT
 # ##############################################################################
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
+set(CMAKE_CXX_COMPILER "g++")
 project(trm VERSION 0.0.0)
 
-option(STATIC_ANALYSIS "Use static analysis tools" TRUE)
+option(STATIC_ANALYSIS "Use static analysis tools" FALSE)
 option(OPTIMIZE_DEBUG "Enable compile time optimization for debug build" TRUE)
 option(HPC "Preforms rendering using multiple threads" TRUE)
 set(TRM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -15,8 +16,8 @@ set(TRM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # ##############################################################################
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE
-      "Debug"
-      CACHE STRING "Build Mode" FORCE)
+    "Debug"
+    CACHE STRING "Build Mode" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -24,8 +25,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json")
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-              ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
-              ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json)
+      ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
+      ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json)
   endif()
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
@@ -88,7 +89,7 @@ if(NOT cxxopts_POPULATED)
   add_subdirectory(${cxxopts_SOURCE_DIR} ${cxxopts_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 FetchContent_Declare(
-  fmtlib 
+  fmtlib
   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
   GIT_TAG "master"
   SOURCE_DIR
@@ -114,4 +115,8 @@ target_link_libraries(trm glm::glm cxxopts::cxxopts fmt::fmt)
 find_package(OpenMP QUIET)
 if(OpemMP_FOUND AND HPC)
   target_link_libraries(OpenMP::OpenMP_CXX)
+  message(STATUS "Using OpenMP ${OpenMP_VERSION}")
+elseif(HPC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  message(STATUS "Failed to load OpenMP")
 endif()
