@@ -100,7 +100,7 @@ load_submodule(fmt)
 set(SOURCES src/main.cpp src/bar.cpp src/img.cpp src/prof.cpp)
 add_executable(trm ${SOURCES})
 set_target_properties(
-  trm PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
+  trm PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
 target_link_libraries(trm glm::glm cxxopts::cxxopts fmt::fmt)
 
 # ##############################################################################
