@@ -6,6 +6,7 @@
 #include <optional>
 #include <random>
 #include <regex>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 
@@ -20,6 +21,7 @@
 
 #include "bar.hpp"
 #include "img.hpp"
+#include "interp.hpp"
 #include "prof.hpp"
 
 // PROF_STREAM_FILE("prof.json");
@@ -58,7 +60,7 @@ static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
 static uvec2 resolution = uvec2(100, 100);
 static std::size_t maximum_depth = 10;
-static std::size_t spp = 128;
+static std::size_t spp = 32;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 
@@ -168,6 +170,18 @@ std::shared_ptr<Sdf> sdfPlane(const Vec4 &norm,
 std::ostream &operator<<(std::ostream &out, const Vec3 &v) {
   return out << fmt::format("[{}, {}, {}]", v.x, v.y, v.z);
 }
+std::istream &operator>>(std::istream &in, Vec3 &v) {
+  in >> v.x;
+  if (in.peek() != ',')
+    throw std::logic_error("expected a ','");
+  in.ignore(1, ' ');
+  in >> v.y;
+  if (in.peek() != ',')
+    throw std::logic_error("expected a ','");
+  in.ignore(1, ' ');
+  in >> v.z;
+  return in;
+}
 
 Vec3 hemisphere(const Float &u1, const Float &u2) {
   const Float r = sqrt(1.0 - u1 * u1);
@@ -254,9 +268,11 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
   return color;
 }
 
-void render() {
+void render(const std::size_t &frame, const Float &t_start,
+            const Float t_delta) {
   PROF_FUNC("renderer");
-  ProgressBar bar(resolution.y * resolution.x);
+  ProgressBar bar(resolution.y * resolution.x,
+                  fmt::format("Frame: {:5} @ {:7.3}", frame, t_start));
   bar.unit_scale = true;
   bar.unit = "px";
   uint8_t *buffer =
@@ -284,7 +300,9 @@ void render() {
     if (i % 128 == 0)
       bar.update(128);
   }
-  write_file("test.png", resolution, buffer);
+  write_file(fmt::format("{frame:05d}.png", fmt::arg("frame", frame),
+                         fmt::arg("time", t_start)),
+             resolution, buffer);
   if (buffer != nullptr)
     free(buffer);
   bar.finish();
@@ -295,8 +313,13 @@ int main(int argc, char *argv[]) {
              std::vector<std::string>(argv + 1, argv + argc));
   cxxopts::Options options("trm", "Tiny Ray Marcher");
   options.show_positional_help();
+  options.add_options("Camera")("p,position", "position of the camera",
+                                cxxopts::value<Vec3>())(
+      "c,center", "center of the cameras focus", cxxopts::value<Vec3>())(
+      "u,up", "direction that will be the top of the image",
+      cxxopts::value<Vec3>());
   options.add_options()(
-      "o,output", "Output file path",
+      "o,output", "output file path",
       cxxopts::value<std::string>()->default_value("{frame:010}.png"),
       "FILEDESC");
   options.add_options()("h,help", "show this help message");
@@ -305,12 +328,23 @@ int main(int argc, char *argv[]) {
     std::cout << options.help() << std::endl;
     return 0;
   }
-  PROF_END();
-  PROF_BEGIN("scene", "main");
 
   camera.pos = Vec3(0.0f, 0.0f, 0.01f);
   camera.up = Vec3(0.0f, 1.0f, 0.0f);
-  camera.center = Vec3(0.0f, 0.0f, 5.0f);
+  camera.center = Vec3(0.0f, -0.5f, 2.0f);
+
+  if (result.count("position")) {
+    camera.pos = result["position"].as<Vec3>();
+  }
+  if (result.count("center")) {
+    camera.center = result["center"].as<Vec3>();
+  }
+  if (result.count("up")) {
+    camera.up = result["up"].as<Vec3>();
+  }
+
+  PROF_END();
+  PROF_BEGIN("scene", "main");
 
   objects.push_back(sdfPlane({0.0, 1.0, 0.0, -2.0}, matDiff({1.0, 1.0, 1.0})));
   objects.push_back(
@@ -321,15 +355,27 @@ int main(int argc, char *argv[]) {
   objects.push_back(sdfPlane({0.0, 0.0, 1.0, 0.0}, matDiff({1.0, 1.0, 1.0})));
 
   objects.push_back(
-      sdfSphere(1.0, matDiff({1.0, 1.0, 1.0}))->translate(1.0, -1.0, 3.0));
+      sdfSphere(1.0, matRefr(1.5, {1.0, 1.0, 1.0}))->translate(1.0, -1.0, 3.0));
   objects.push_back(
       sdfSphere(0.5, matSpec({1.0, 1.0, 1.0}))->translate(-0.5, -1.5, 2.0));
-  objects.push_back(sdfSphere(0.5, matRefr(1.5, {1.0, 1.0, 1.0}))
+  objects.push_back(sdfSphere(0.5, matDiff({1.0, 1.0, 1.0}))
                         ->translate(-1.0, -1.5, 3.0));
 
   PROF_END();
-  for (std::size_t i = 0; i < 10; ++i) {
-    render();
+  // render();
+
+  Interpolation<Float, Vec3> interp;
+  interp.insert(0.0, Vec3(0.0f, 0.0f, 0.1f));
+  interp.insert(1.0, Vec3(1.9f, 0.0f, 2.0f));
+  interp.insert(2.0, Vec3(0.0f, 0.0f, 3.9f));
+  interp.insert(3.0, Vec3(-1.9f, 0.0f, 2.0f));
+  interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
+  std::size_t frame = 0;
+  for (Float i = interp.begin(); i <= interp.end(); i += 0.1) {
+    camera.pos = interp[i];
+    render(frame, i, 1 / 60.0);
+    frame++;
+    // std::cout << i << "->" << interp[i] << "\n";
   }
 
   return 0;

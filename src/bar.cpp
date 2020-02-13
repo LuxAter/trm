@@ -297,4 +297,5 @@ void ProgressBar::update(std::size_t i) {
 void ProgressBar::finish() {
   next(total - n);
   display();
+  std::fprintf(stdout, "\n");
 }
