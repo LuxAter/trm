@@ -5,8 +5,16 @@ T linear_interpolation(const T &a, const T &b, const S &t) {
   return a + t * (b - a);
 }
 template <typename S, typename T>
-T finite_difference(const T& a, const T& b, const T& c, const T& d, const S& t) {
-
+T hermite(const T &y0, const T &y1, const T &y2, const T &y3, const S &t) {
+  S t2 = t * t;
+  S t3 = t2 * t;
+  T m0 = (y1 - y0) / 2.0f + (y2 - y1) / 2.0f;
+  T m1 = (y2 - y1) / 2.0f + (y3 - y2) / 2.0f;
+  S a0 = 2.0f * t3 - 3.0f * t2 + 1.0f;
+  S a1 = t3 - 2.0f * t2 + t;
+  S a2 = t3 - t2;
+  S a3 = -2 * t3 + 3.0f * t2;
+  return (a0 * y1 + a1 * m0 + a2 * m1 + a3 * y2);
 }
 
 template <typename S, typename T> class Interpolation {

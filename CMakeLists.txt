@@ -7,7 +7,7 @@ project(trm VERSION 0.0.0)
 
 option(STATIC_ANALYSIS "Use static analysis tools" FALSE)
 option(OPTIMIZE_DEBUG "Enable compile time optimization for debug build" TRUE)
-option(PROFILER "Enable deuging profiler" TRUE)
+option(PROFILER "Enable deuging profiler" FALSE)
 option(HPC "Preforms rendering using multiple threads" TRUE)
 set(TRM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(TRM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})

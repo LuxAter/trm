@@ -29,11 +29,13 @@
 using namespace glm;
 
 #ifdef DOUBLE_PERC
+typedef glm::dvec2 Vec2;
 typedef glm::dvec3 Vec3;
 typedef glm::dvec4 Vec4;
 typedef glm::dmat4 Mat4;
 typedef double Float;
 #else
+typedef glm::vec2 Vec2;
 typedef glm::vec3 Vec3;
 typedef glm::vec4 Vec4;
 typedef glm::mat4 Mat4;
@@ -58,17 +60,19 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(100, 100);
+static uvec2 resolution = uvec2(1000, 1000);
 static std::size_t maximum_depth = 10;
-static std::size_t spp = 32;
+static std::size_t spp = 16;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 
 // Random number generator
 std::random_device rd;
 std::mt19937 gen(rd());
+std::uniform_int_distribution<int> idist(0, std::numeric_limits<int>::max());
 std::uniform_real_distribution<Float> dist(0.0f, 1.0f);
 std::uniform_real_distribution<Float> dist2(-1.0f, 1.0f);
+inline int irand() { return idist(gen); }
 inline Float frand() { return dist(gen); }
 inline Float frand2() { return dist2(gen); }
 
@@ -111,19 +115,19 @@ struct Sdf : std::enable_shared_from_this<Sdf> {
   Sdf(const Mat4 &trans, const Mat4 &inv, const std::shared_ptr<Mat> &mat)
       : trans(trans), inv(inv), mat(mat) {}
   inline Float operator()(const Vec3 &p) const {
-    return abs(this->dist(Vec3(inv * Vec4(p, 1.0))));
+    return this->dist(Vec3(inv * Vec4(p, 1.0)));
   }
   inline Vec3 normal(const Vec3 &p,
                      const Float &ep = 10 *
                                        std::numeric_limits<Float>::epsilon()) {
     Vec3 op = inv * Vec4(p, 1.0f);
-    return normalize(Vec4(this->dist(Vec3(op.x + ep, op.y, op.z)) -
-                              this->dist(Vec3(op.x - ep, op.y, op.z)),
-                          this->dist(Vec3(op.x, op.y + ep, op.z)) -
-                              this->dist(Vec3(op.x, op.y - ep, op.z)),
-                          this->dist(Vec3(op.x, op.y, op.z + ep)) -
-                              this->dist(Vec3(op.x, op.y, op.z - ep)),
-                          0.0));
+    return trans * normalize(Vec4(this->dist(Vec3(op.x + ep, op.y, op.z)) -
+                                      this->dist(Vec3(op.x - ep, op.y, op.z)),
+                                  this->dist(Vec3(op.x, op.y + ep, op.z)) -
+                                      this->dist(Vec3(op.x, op.y - ep, op.z)),
+                                  this->dist(Vec3(op.x, op.y, op.z + ep)) -
+                                      this->dist(Vec3(op.x, op.y, op.z - ep)),
+                                  0.0));
   }
 
   inline std::shared_ptr<Sdf> translate(const Vec3 &xyz) {
@@ -134,6 +138,24 @@ struct Sdf : std::enable_shared_from_this<Sdf> {
   inline std::shared_ptr<Sdf> translate(const Float &x, const Float &y,
                                         const Float &z) {
     return this->translate({x, y, z});
+  }
+  inline std::shared_ptr<Sdf> rotate(const Float &angle, const Vec3 &xyz) {
+    this->trans = glm::rotate(this->trans, angle, xyz);
+    this->inv = glm::rotate(this->inv, -angle, xyz);
+    return shared_from_this();
+  }
+  inline std::shared_ptr<Sdf> rotate(const Float &angle, const Float &x,
+                                     const Float &y, const Float &z) {
+    return this->rotate(angle, {x, y, z});
+  }
+  inline std::shared_ptr<Sdf> scale(const Vec3 &xyz) {
+    this->trans = glm::scale(this->trans, xyz);
+    this->inv = glm::scale(this->inv, 1.0f / xyz);
+    return shared_from_this();
+  }
+  inline std::shared_ptr<Sdf> scale(const Float &x, const Float &y,
+                                    const Float &z) {
+    return this->scale({x, y, z});
   }
 
   inline virtual Float dist(const Vec3 &) const {
@@ -153,6 +175,48 @@ std::shared_ptr<Sdf> sdfSphere(const Float &radius,
                                const std::shared_ptr<Mat> &mat = nullptr) {
   return std::make_shared<Sphere>(radius, Mat4(1.0), Mat4(1.0), mat);
 }
+struct Box : Sdf {
+  Box(const Vec3 &dim, const Mat4 &trans, const Mat4 &inv,
+      const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), dim(dim) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec3 q = abs(p) - dim;
+    return length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
+  }
+  Vec3 dim;
+};
+std::shared_ptr<Sdf> sdfBox(const Vec3 &dim,
+                            const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Box>(dim, Mat4(1.0), Mat4(1.0), mat);
+}
+struct Cylinder : Sdf {
+  Cylinder(const Float &h, const Float &r, const Mat4 &trans, const Mat4 &inv,
+           const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), height(h), radius(r) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec2 d = abs(Vec2(length(p.xz()), p.y)) - Vec2(radius, height);
+    return min(max(d.x, d.y), 0.0f) + length(max(d, 0.0f));
+  }
+  Float height, radius;
+};
+std::shared_ptr<Sdf> sdfCylinder(const Float &h, const Float &r,
+                                 const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Cylinder>(h, r, Mat4(1.0), Mat4(1.0), mat);
+}
+struct Torus : Sdf {
+  Torus(const Vec2 &t, const Mat4 &trans, const Mat4 &inv,
+        const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), torus(t) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec2 q = Vec2(length(p.xz()) - torus.x, p.y);
+    return length(q) - torus.y;
+  }
+  Vec2 torus;
+};
+std::shared_ptr<Sdf> sdfTorus(const Vec2 &t,
+                              const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Torus>(t, Mat4(1.0), Mat4(1.0), mat);
+}
 struct Plane : Sdf {
   Plane(const Vec4 &n, const Mat4 &trans, const Mat4 &inv,
         const std::shared_ptr<Mat> &mat)
@@ -165,6 +229,157 @@ struct Plane : Sdf {
 std::shared_ptr<Sdf> sdfPlane(const Vec4 &norm,
                               const std::shared_ptr<Mat> &mat = nullptr) {
   return std::make_shared<Plane>(norm, Mat4(1.0), Mat4(1.0), mat);
+}
+
+struct Elongate : Sdf {
+  Elongate(const Vec3 &h, const std::shared_ptr<Sdf> &a, const Mat4 &trans,
+           const Mat4 &inv, const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), h(h), a(a) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec3 q = abs(p) - h;
+    return (*a)(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
+  }
+  Vec3 h;
+  std::shared_ptr<Sdf> a;
+};
+std::shared_ptr<Sdf> sdfElongate(const std::shared_ptr<Sdf> &sdf, const Vec3 &h,
+                                 const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Elongate>(h, sdf, Mat4(1.0), Mat4(1.0), mat);
+}
+struct Round : Sdf {
+  Round(const Float &r, const std::shared_ptr<Sdf> &a, const Mat4 &trans,
+        const Mat4 &inv, const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), radius(r), a(a) {}
+  inline Float dist(const Vec3 &p) const override { return (*a)(p)-radius; }
+  Float radius;
+  std::shared_ptr<Sdf> a;
+};
+std::shared_ptr<Sdf> sdfRound(const std::shared_ptr<Sdf> &sdf, const Float &r,
+                              const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Round>(r, sdf, Mat4(1.0), Mat4(1.0), mat);
+}
+struct Onion : Sdf {
+  Onion(const Float &thickness, const std::shared_ptr<Sdf> &a,
+        const Mat4 &trans, const Mat4 &inv, const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), thickness(thickness), a(a) {}
+  inline Float dist(const Vec3 &p) const override {
+    return abs((*a)(p)) - thickness;
+  }
+  Float thickness;
+  std::shared_ptr<Sdf> a;
+};
+std::shared_ptr<Sdf> sdfOnion(const std::shared_ptr<Sdf> &sdf,
+                              const Float &thickness,
+                              const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Onion>(thickness, sdf, Mat4(1.0), Mat4(1.0), mat);
+}
+
+struct Union : Sdf {
+  Union(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
+        const Mat4 &trans, const Mat4 &inv, const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), a(a), b(b) {}
+  inline Float dist(const Vec3 &p) const override {
+    return min((*a)(p), (*b)(p));
+  }
+  std::shared_ptr<Sdf> a, b;
+};
+std::shared_ptr<Sdf> sdfUnion(const std::shared_ptr<Sdf> &a,
+                              const std::shared_ptr<Sdf> &b,
+                              const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Union>(a, b, Mat4(1.0), Mat4(1.0), mat);
+}
+struct Subtraction : Sdf {
+  Subtraction(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
+              const Mat4 &trans, const Mat4 &inv,
+              const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), a(a), b(b) {}
+  inline Float dist(const Vec3 &p) const override {
+    return max(-(*a)(p), (*b)(p));
+  }
+  std::shared_ptr<Sdf> a, b;
+};
+std::shared_ptr<Sdf> sdfSubtraction(const std::shared_ptr<Sdf> &a,
+                                    const std::shared_ptr<Sdf> &b,
+                                    const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Subtraction>(a, b, Mat4(1.0), Mat4(1.0), mat);
+}
+struct Intersection : Sdf {
+  Intersection(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
+               const Mat4 &trans, const Mat4 &inv,
+               const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), a(a), b(b) {}
+  inline Float dist(const Vec3 &p) const override {
+    return max((*a)(p), (*b)(p));
+  }
+  std::shared_ptr<Sdf> a, b;
+};
+std::shared_ptr<Sdf>
+sdfIntersection(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
+                const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<Intersection>(a, b, Mat4(1.0), Mat4(1.0), mat);
+}
+
+struct SmoothUnion : Sdf {
+  SmoothUnion(const Float &r, const std::shared_ptr<Sdf> &a,
+              const std::shared_ptr<Sdf> &b, const Mat4 &trans, const Mat4 &inv,
+              const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), radius(r), a(a), b(b) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float d1 = (*a)(p);
+    Float d2 = (*b)(p);
+    Float h = max(radius - abs(d1 - d2), 0.0f);
+    return min(d1, d2) - h * h * 0.25 / radius;
+  }
+  Float radius;
+  std::shared_ptr<Sdf> a, b;
+};
+std::shared_ptr<Sdf> sdfSmoothUnion(const std::shared_ptr<Sdf> &a,
+                                    const std::shared_ptr<Sdf> &b,
+                                    const Float &radius,
+                                    const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<SmoothUnion>(radius, a, b, Mat4(1.0), Mat4(1.0), mat);
+}
+struct SmoothSubtraction : Sdf {
+  SmoothSubtraction(const Float &r, const std::shared_ptr<Sdf> &a,
+                    const std::shared_ptr<Sdf> &b, const Mat4 &trans,
+                    const Mat4 &inv, const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), radius(r), a(a), b(b) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float d1 = (*a)(p);
+    Float d2 = (*b)(p);
+    Float h = max(radius - abs(-d1 - d2), 0.0f);
+    return max(-d1, d2) + h * h * 0.25f / radius;
+  }
+  Float radius;
+  std::shared_ptr<Sdf> a, b;
+};
+std::shared_ptr<Sdf>
+sdfSmoothSubtraction(const std::shared_ptr<Sdf> &a,
+                     const std::shared_ptr<Sdf> &b, const Float &radius,
+                     const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<SmoothSubtraction>(radius, a, b, Mat4(1.0), Mat4(1.0),
+                                             mat);
+}
+struct SmoothIntersection : Sdf {
+  SmoothIntersection(const Float &r, const std::shared_ptr<Sdf> &a,
+                     const std::shared_ptr<Sdf> &b, const Mat4 &trans,
+                     const Mat4 &inv, const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), radius(r), a(a), b(b) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float d1 = (*a)(p);
+    Float d2 = (*b)(p);
+    Float h = max(radius - abs(d1 - d2), 0.0f);
+    return max(d1, d2) + h * h * 0.25 / radius;
+  }
+  Float radius;
+  std::shared_ptr<Sdf> a, b;
+};
+std::shared_ptr<Sdf>
+sdfSmoothIntersection(const std::shared_ptr<Sdf> &a,
+                      const std::shared_ptr<Sdf> &b, const Float &radius,
+                      const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<SmoothIntersection>(radius, a, b, Mat4(1.0),
+                                              Mat4(1.0), mat);
 }
 
 std::ostream &operator<<(std::ostream &out, const Vec3 &v) {
@@ -195,7 +410,7 @@ std::tuple<Float, std::shared_ptr<Sdf>> sdfScene(const Vec3 &p) {
   for (auto &obj : objects) {
     if (obj->mat == nullptr)
       continue;
-    Float obj_dist = (*obj)(p);
+    Float obj_dist = abs((*obj)(p));
     if (obj_dist < dist) {
       dist = obj_dist;
       closest_obj = obj;
@@ -271,17 +486,17 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
 void render(const std::size_t &frame, const Float &t_start,
             const Float t_delta) {
   PROF_FUNC("renderer");
-  ProgressBar bar(resolution.y * resolution.x,
-                  fmt::format("Frame: {:5} @ {:7.3}", frame, t_start));
-  bar.unit_scale = true;
-  bar.unit = "px";
+  // ProgressBar bar(resolution.y * resolution.x,
+  //                 fmt::format("Frame: {:5} @ {:7.3}", frame, t_start));
+  // bar.unit_scale = true;
+  // bar.unit = "px";
   uint8_t *buffer =
       (uint8_t *)malloc(sizeof(uint8_t) * 3 * resolution.x * resolution.y);
 
   Mat4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
   Float filmz = resolution.x / (2.0f * tan(fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-#pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
+#pragma omp parallel for schedule(dynamic, 256) shared(buffer)
   for (std::size_t i = 0; i < resolution.x * resolution.y; ++i) {
     PROF_SCOPED("pixel", "renderer");
     std::size_t x = i % resolution.x;
@@ -296,16 +511,16 @@ void render(const std::size_t &frame, const Float &t_start,
     buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
     buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
     buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
-#pragma omp critical
-    if (i % 128 == 0)
-      bar.update(128);
+    // #pragma omp critical
+    //     if (i % 128 == 0)
+    //       bar.update(128);
   }
   write_file(fmt::format("{frame:05d}.png", fmt::arg("frame", frame),
                          fmt::arg("time", t_start)),
              resolution, buffer);
   if (buffer != nullptr)
     free(buffer);
-  bar.finish();
+  // bar.finish();
 }
 
 int main(int argc, char *argv[]) {
@@ -331,7 +546,7 @@ int main(int argc, char *argv[]) {
 
   camera.pos = Vec3(0.0f, 0.0f, 0.01f);
   camera.up = Vec3(0.0f, 1.0f, 0.0f);
-  camera.center = Vec3(0.0f, -0.5f, 2.0f);
+  camera.center = Vec3(0.0f, -5.0f, 10.0f);
 
   if (result.count("position")) {
     camera.pos = result["position"].as<Vec3>();
@@ -346,29 +561,128 @@ int main(int argc, char *argv[]) {
   PROF_END();
   PROF_BEGIN("scene", "main");
 
-  objects.push_back(sdfPlane({0.0, 1.0, 0.0, -2.0}, matDiff({1.0, 1.0, 1.0})));
+  objects.push_back(sdfPlane({0.0, 1.0, 0.0, -5.0}, matDiff({1.0, 1.0, 1.0})));
   objects.push_back(
-      sdfPlane({0.0, -1.0, 0.0, -2.0}, matEmis(10.0, {1.0, 1.0, 1.0})));
-  objects.push_back(sdfPlane({-1.0, 0.0, 0.0, -2.0}, matDiff({1.0, 0.2, 0.2})));
-  objects.push_back(sdfPlane({1.0, 0.0, 0.0, -2.0}, matDiff({0.2, 1.0, 0.2})));
-  objects.push_back(sdfPlane({0.0, 0.0, -1.0, -4.0}, matDiff({0.2, 0.2, 1.0})));
+      sdfPlane({0.0, -1.0, 0.0, -1.0}, matEmis(10.0, {1.0, 1.0, 1.0})));
+  objects.push_back(
+      sdfPlane({-1.0, 0.0, 0.0, -10.0}, matDiff({1.0, 0.2, 0.2})));
+  objects.push_back(sdfPlane({1.0, 0.0, 0.0, -10.0}, matDiff({0.2, 1.0, 0.2})));
+  objects.push_back(
+      sdfPlane({0.0, 0.0, -1.0, -20.0}, matDiff({0.2, 0.2, 1.0})));
   objects.push_back(sdfPlane({0.0, 0.0, 1.0, 0.0}, matDiff({1.0, 1.0, 1.0})));
 
+  auto white_diff = matDiff({1.0, 1.0, 1.0});
+  auto white_spec = matSpec({1.0, 1.0, 1.0});
+  auto white_refr = matRefr(1.5, {1.0, 1.0, 1.0});
+  auto rand_rot = []() { return normalize(Vec3(frand(), frand(), frand())); };
+
+  objects.push_back(sdfSphere(0.75, white_diff)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(0.0f, -4.0f, 10.0f));
+  objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_diff)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(-3.0f, -4.0f, 10.0f));
+  objects.push_back(sdfCylinder(1.0, 0.2, white_diff)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(3.0f, -4.0f, 10.0f));
+  objects.push_back(sdfTorus({1.0, 0.3}, white_diff)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(0.0f, -4.0f, 7.0f));
+  objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_diff)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(0.0f, -4.0f, 13.0f));
+
+  objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
+                                   sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+                                   0.2, white_diff)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(-3.0f, -4.0f, 7.0f));
   objects.push_back(
-      sdfSphere(1.0, matRefr(1.5, {1.0, 1.0, 1.0}))->translate(1.0, -1.0, 3.0));
+      sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
+                            sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
+                            white_diff)
+          ->rotate(M_PI / 2.0f * frand(), rand_rot())
+          ->translate(3.0f, -4.0f, 7.0f));
   objects.push_back(
-      sdfSphere(0.5, matSpec({1.0, 1.0, 1.0}))->translate(-0.5, -1.5, 2.0));
-  objects.push_back(sdfSphere(0.5, matDiff({1.0, 1.0, 1.0}))
-                        ->translate(-1.0, -1.5, 3.0));
+      sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+                           sdfBox({1.0, 0.5, 1.0}), 0.2, white_diff)
+          ->rotate(M_PI / 2.0f * frand(), rand_rot())
+          ->translate(-3.0f, -4.0f, 13.0f));
+
+  objects.push_back(sdfSphere(0.75, white_spec)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(3.0f, -4.0f, 13.0f));
+  objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_spec)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(0.0f, -4.0f, 4.0f));
+  objects.push_back(sdfCylinder(1.0, 0.2, white_spec)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(0.0f, -4.0f, 16.0f));
+  objects.push_back(sdfTorus({1.0, 0.3}, white_spec)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(6.0f, -4.0f, 10.0f));
+  objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_spec)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(-6.0f, -4.0f, 10.0f));
+
+  objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
+                                   sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+                                   0.2, white_spec)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(-6.0f, -4.0f, 7.0f));
+  objects.push_back(
+      sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
+                            sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
+                            white_spec)
+          ->rotate(M_PI / 2.0f * frand(), rand_rot())
+          ->translate(6.0f, -4.0f, 7.0f));
+  objects.push_back(
+      sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+                           sdfBox({1.0, 0.5, 1.0}), 0.2, white_spec)
+          ->rotate(M_PI / 2.0f * frand(), rand_rot())
+          ->translate(-6.0f, -4.0f, 13.0f));
+
+  objects.push_back(sdfSphere(0.75, white_refr)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(6.0f, -4.0f, 13.0f));
+  objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_refr)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(6.0f, -4.0f, 7.0f));
+  objects.push_back(sdfCylinder(1.0, 0.2, white_refr)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(3.0f, -4.0f, 4.0f));
+  objects.push_back(sdfTorus({1.0, 0.3}, white_refr)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(-3.0f, -4.0f, 4.0f));
+  objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_refr)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(3.0f, -4.0f, 16.0f));
+
+  objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
+                                   sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+                                   0.2, white_refr)
+                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
+                        ->translate(-3.0f, -4.0f, 16.0f));
+  objects.push_back(
+      sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
+                            sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
+                            white_refr)
+          ->rotate(M_PI / 2.0f * frand(), rand_rot())
+          ->translate(6.0f, -4.0f, 16.0f));
+  objects.push_back(
+      sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+                           sdfBox({1.0, 0.5, 1.0}), 0.2, white_refr)
+          ->rotate(M_PI / 2.0f * frand(), rand_rot())
+          ->translate(-6.0f, -4.0f, 4.0f));
 
   PROF_END();
-  // render();
+  // render(0, 0.0f, 1 / 60.0f);
 
-  Interpolation<Float, Vec3> interp;
+  Interpolation<Float, Vec3> interp(hermite<Float, Vec3>);
   interp.insert(0.0, Vec3(0.0f, 0.0f, 0.1f));
-  interp.insert(1.0, Vec3(1.9f, 0.0f, 2.0f));
-  interp.insert(2.0, Vec3(0.0f, 0.0f, 3.9f));
-  interp.insert(3.0, Vec3(-1.9f, 0.0f, 2.0f));
+  interp.insert(1.0, Vec3(9.9f, 0.0f, 10.0f));
+  interp.insert(2.0, Vec3(0.0f, 0.0f, 19.9f));
+  interp.insert(3.0, Vec3(-9.9f, 0.0f, 10.0f));
   interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
   std::size_t frame = 0;
   for (Float i = interp.begin(); i <= interp.end(); i += 0.1) {
