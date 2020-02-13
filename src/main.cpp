@@ -60,9 +60,9 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(100, 100);
-static std::size_t maximum_depth = 3;
-static std::size_t spp = 4;
+static uvec2 resolution = uvec2(5000, 5000);
+static std::size_t maximum_depth = 16;
+static std::size_t spp = 256;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 static bool progress_display = true;
@@ -693,7 +693,7 @@ int main(int argc, char *argv[]) {
   interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
   interp.insert(5.0, Vec3(9.9f, 0.0f, 10.0f));
   std::size_t frame = 0;
-  for (Float i = interp.begin(1); i <= interp.end(-1); i += 0.1) {
+  for (Float i = interp.begin(1); i <= interp.end(-1); i += 0.01) {
     camera.pos = interp[i];
     render(frame, i, 1 / 60.0);
     frame++;

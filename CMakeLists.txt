@@ -2,8 +2,8 @@
 # PROJECT
 # ##############################################################################
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
-set(CMAKE_CXX_COMPILER "g++")
-project(trm VERSION 0.0.0)
+# set(CMAKE_CXX_COMPILER "g++")
+project(trm VERSION 1.0.0)
 
 option(STATIC_ANALYSIS "Use static analysis tools" FALSE)
 option(OPTIMIZE_DEBUG "Enable compile time optimization for debug build" TRUE)
