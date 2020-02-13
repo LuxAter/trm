@@ -41,8 +41,8 @@ public:
                     std::make_pair(t, v));
     }
   }
-  S begin() const { return values.front().first; }
-  S end() const { return values.back().first; }
+  S begin(int offset = 0) const { return (values.begin() + offset)->first; }
+  S end(int offset = 0) const { return (values.end() + offset - 1)->first; }
   T operator[](const S &t) {
     if (values.front().first > t) {
       return values.front().second;

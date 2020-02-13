@@ -60,11 +60,12 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(1000, 1000);
-static std::size_t maximum_depth = 10;
-static std::size_t spp = 16;
+static uvec2 resolution = uvec2(100, 100);
+static std::size_t maximum_depth = 3;
+static std::size_t spp = 4;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
+static bool progress_display = true;
 
 // Random number generator
 std::random_device rd;
@@ -486,10 +487,11 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
 void render(const std::size_t &frame, const Float &t_start,
             const Float t_delta) {
   PROF_FUNC("renderer");
-  // ProgressBar bar(resolution.y * resolution.x,
-  //                 fmt::format("Frame: {:5} @ {:7.3}", frame, t_start));
-  // bar.unit_scale = true;
-  // bar.unit = "px";
+  ProgressBar bar(resolution.y * resolution.x,
+                  fmt::format("Frame: {:5d} @ {:7.3f}", frame, t_start),
+                  progress_display);
+  bar.unit_scale = true;
+  bar.unit = "px";
   uint8_t *buffer =
       (uint8_t *)malloc(sizeof(uint8_t) * 3 * resolution.x * resolution.y);
 
@@ -511,16 +513,16 @@ void render(const std::size_t &frame, const Float &t_start,
     buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
     buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
     buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
-    // #pragma omp critical
-    //     if (i % 128 == 0)
-    //       bar.update(128);
+#pragma omp critical
+    if (i % 128 == 0)
+      bar.update(128);
   }
   write_file(fmt::format("{frame:05d}.png", fmt::arg("frame", frame),
                          fmt::arg("time", t_start)),
              resolution, buffer);
   if (buffer != nullptr)
     free(buffer);
-  // bar.finish();
+  bar.finish();
 }
 
 int main(int argc, char *argv[]) {
@@ -537,11 +539,15 @@ int main(int argc, char *argv[]) {
       "o,output", "output file path",
       cxxopts::value<std::string>()->default_value("{frame:010}.png"),
       "FILEDESC");
-  options.add_options()("h,help", "show this help message");
+  options.add_options()("h,help", "show this help message")(
+      "no-bar", "disables fancy progress bar display");
   auto result = options.parse(argc, argv);
   if (result.count("help")) {
     std::cout << options.help() << std::endl;
     return 0;
+  }
+  if (result.count("no-bar")) {
+    progress_display = false;
   }
 
   camera.pos = Vec3(0.0f, 0.0f, 0.01f);
@@ -679,13 +685,15 @@ int main(int argc, char *argv[]) {
   // render(0, 0.0f, 1 / 60.0f);
 
   Interpolation<Float, Vec3> interp(hermite<Float, Vec3>);
+  interp.insert(-1.0, Vec3(-9.9f, 0.0f, 10.0f));
   interp.insert(0.0, Vec3(0.0f, 0.0f, 0.1f));
   interp.insert(1.0, Vec3(9.9f, 0.0f, 10.0f));
   interp.insert(2.0, Vec3(0.0f, 0.0f, 19.9f));
   interp.insert(3.0, Vec3(-9.9f, 0.0f, 10.0f));
   interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
+  interp.insert(5.0, Vec3(9.9f, 0.0f, 10.0f));
   std::size_t frame = 0;
-  for (Float i = interp.begin(); i <= interp.end(); i += 0.1) {
+  for (Float i = interp.begin(1); i <= interp.end(-1); i += 0.1) {
     camera.pos = interp[i];
     render(frame, i, 1 / 60.0);
     frame++;

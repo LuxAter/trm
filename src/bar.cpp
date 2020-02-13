@@ -49,8 +49,10 @@ std::string regex_replace(const std::string &s,
 }
 } // namespace std
 
-ProgressBar::ProgressBar(const std::size_t &n, const std::string &desc)
-    : n(0), total(n), tp(std::chrono::system_clock::now()), desc(desc) {
+ProgressBar::ProgressBar(const std::size_t &n, const std::string &desc,
+                         const bool &nice_display)
+    : n(0), total(n), tp(std::chrono::system_clock::now()), desc(desc),
+      nice_display(nice_display) {
   display();
 }
 
@@ -73,10 +75,9 @@ std::string ProgressBar::format_sizeof(const float &number) {
     if (std::abs(num) < 999.5) {
       if (std::abs(num) < 99.95) {
         if (std::abs(num) < 9.995) {
-
-          return fmt::format("{:1.2f}", num) + unit;
+          return fmt::format("{:1.3f}", num) + unit;
         }
-        return fmt::format("{:2.1f}", num) + unit;
+        return fmt::format("{:2.2f}", num) + unit;
       }
       return fmt::format("{:3.1f}", num) + unit;
     }
@@ -95,6 +96,8 @@ std::string ProgressBar::format_interval(const std::size_t &s) {
   }
 }
 std::string ProgressBar::format_color(const char &spec, const char &msg) {
+  if (nice_display == false)
+    return fmt::format("{:c}", msg);
   switch (spec) {
   case 'k':
     return fmt::format("\033[30m{}\033[0m", msg);
@@ -136,6 +139,8 @@ std::string ProgressBar::format_color(const char &spec, const char &msg) {
 }
 std::string ProgressBar::format_color(const char &spec,
                                       const std::string &msg) {
+  if (nice_display == false)
+    return msg;
   switch (spec) {
   case 'k':
     return fmt::format("\033[30m{}\033[0m", msg);
@@ -232,7 +237,7 @@ void ProgressBar::display() {
       meter,
       std::regex("\\{percentage(:([0-9]+)?(\\.([0-9]+))?)?(;(["
                  "krgybmcwKRGYBMCW\\*_]+))?\\}"),
-      [percentage](const std::smatch &match) {
+      [percentage, this](const std::smatch &match) {
         std::string fmt_spec = "{:" + (match[2].matched ? match[2].str() : "") +
                                (match[4].matched ? "." + match[4].str() : "") +
                                "f}";
@@ -286,8 +291,12 @@ void ProgressBar::display() {
           return format_color(fmt_color[0], val);
         });
   }
-  std::fprintf(stdout, "\033[2K\033[1G%s\033[0m", meter.c_str());
-  std::fflush(stdout);
+  if (nice_display == false) {
+    std::fprintf(stdout, "%s\n", meter.c_str());
+  } else {
+    std::fprintf(stdout, "\033[2K\033[1G%s\033[0m", meter.c_str());
+    std::fflush(stdout);
+  }
 }
 
 void ProgressBar::update(std::size_t i) {
@@ -297,5 +306,6 @@ void ProgressBar::update(std::size_t i) {
 void ProgressBar::finish() {
   next(total - n);
   display();
-  std::fprintf(stdout, "\n");
+  if (!nice_display)
+    std::fprintf(stdout, "\n");
 }
