@@ -1,8 +1,7 @@
 # ##############################################################################
 # PROJECT
 # ##############################################################################
-cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
-# set(CMAKE_CXX_COMPILER "g++")
+cmake_minimum_required(VERSION 3.14.0 FATAL_ERROR)
 project(trm VERSION 1.0.0)
 
 option(STATIC_ANALYSIS "Use static analysis tools" FALSE)
@@ -93,41 +92,7 @@ endmacro()
 # ##############################################################################
 load_submodule(glm)
 load_submodule(cxxopts)
-load_submodule(fmtlib)
-# include(FetchContent)
-# FetchContent_Declare(
-#   glm
-#   GIT_REPOSITORY https://github.com/g-truc/glm.git
-#   GIT_TAG "master"
-#   SOURCE_DIR
-#   ${CMAKE_SOURCE_DIR}/3rdparty/glm)
-# FetchContent_GetProperties(glm)
-# if(NOT glm_POPULATED)
-#   FetchContent_Populate(glm)
-#   add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR} EXCLUDE_FROM_ALL)
-# endif()
-# FetchContent_Declare(
-#   cxxopts
-#   GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
-#   GIT_TAG "master"
-#   SOURCE_DIR
-#   ${CMAKE_SOURCE_DIR}/3rdparty/cxxopts)
-# FetchContent_GetProperties(cxxopts)
-# if(NOT cxxopts_POPULATED)
-#   FetchContent_Populate(cxxopts)
-#   add_subdirectory(${cxxopts_SOURCE_DIR} ${cxxopts_BINARY_DIR} EXCLUDE_FROM_ALL)
-# endif()
-# FetchContent_Declare(
-#   fmtlib
-#   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-#   GIT_TAG "master"
-#   SOURCE_DIR
-#   ${CMAKE_SOURCE_DIR}/3rdparty/fmtlib)
-# FetchContent_GetProperties(fmtlib)
-# if(NOT fmtlib_POPULATED)
-#   FetchContent_Populate(fmtlib)
-#   add_subdirectory(${fmtlib_SOURCE_DIR} ${fmtlib_BINARY_DIR} EXCLUDE_FROM_ALL)
-# endif()
+load_submodule(fmt)
 
 # ##############################################################################
 # EXECUTABLE
