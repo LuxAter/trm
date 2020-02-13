@@ -443,7 +443,9 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
     }
     rr_factor = 1.0 / (1.0 - rr_stop_prop);
   }
-  auto [t, obj] = rayMarch(r);
+  Float t;
+  std::shared_ptr<Sdf> obj;
+  std::tie(t, obj) = rayMarch(r);
   if (obj == nullptr)
     return color;
 
