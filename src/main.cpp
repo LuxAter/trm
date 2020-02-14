@@ -77,9 +77,9 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(500, 500);
+static uvec2 resolution = uvec2(100, 100);
 static std::size_t maximum_depth = 16;
-static std::size_t spp = 4;
+static std::size_t spp = 64;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 static bool progress_display = true;
@@ -291,6 +291,24 @@ std::shared_ptr<Sdf> sdfOnion(const std::shared_ptr<Sdf> &sdf,
                               const std::shared_ptr<Mat> &mat = nullptr) {
   return std::make_shared<Onion>(thickness, sdf, Mat4(1.0), Mat4(1.0), mat);
 }
+struct InfiniteRepeat : Sdf {
+  InfiniteRepeat(const Vec3 &period, const std::shared_ptr<Sdf> &a,
+                 const Mat4 &trans, const Mat4 &inv,
+                 const std::shared_ptr<Mat> &mat)
+      : Sdf(trans, inv, mat), period(period), a(a) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec3 q = mod(p + 0.5f * period, period) - 0.5f * period;
+    return (*a)(q);
+  }
+  Vec3 period;
+  std::shared_ptr<Sdf> a;
+};
+std::shared_ptr<Sdf>
+sdfInfiniteRepeat(const std::shared_ptr<Sdf> &sdf, const Vec3 &period,
+                  const std::shared_ptr<Mat> &mat = nullptr) {
+  return std::make_shared<InfiniteRepeat>(period, sdf, Mat4(1.0), Mat4(1.0),
+                                          mat);
+}
 
 struct Union : Sdf {
   Union(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
@@ -501,7 +519,7 @@ void render(const std::size_t &frame, const Float &t_start,
   Mat4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
   Float filmz = resolution.x / (2.0f * tan(fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-#pragma omp parallel for schedule(dynamic, 256) shared(buffer)
+#pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
   for (std::size_t i = 0; i < resolution.x * resolution.y; ++i) {
     PROF_SCOPED("pixel", "renderer");
     std::size_t x = i % resolution.x;
@@ -580,15 +598,39 @@ int main(int argc, char *argv[]) {
                    Vec3(255, 235, 59) / 255.0f, Vec3(255, 193, 7) / 255.0f,
                    Vec3(255, 152, 0) / 255.0f};
 
-  objects.push_back(sdfPlane({0.0, 1.0, 0.0, -2.0}, matDiff({1.0, 1.0, 1.0})));
+  objects.push_back(sdfPlane({0.0, 1.0, 0.0, -6.0}, matDiff({1.0, 1.0, 1.0})));
   objects.push_back(
-      sdfPlane({0.0, -1.0, 0.0, -20.0}, matEmis(1.0, {1.0, 1.0, 1.0})));
+      sdfPlane({0.0, -1.0, 0.0, -25.0}, matEmis(0.0, {1.0, 1.0, 1.0})));
 
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      objects.push_back(
-          sdfSphere(0.75 * frand() + 0.25, matDiff(colors[irand() % ncolors]))
-              ->translate(2.0f * i, -1.0f, 2.0f * j));
+  for (int i = -10; i < 10; ++i) {
+    for (int j = 0; j < 20; ++j) {
+      Float prim = frand();
+      Float type = frand();
+      std::shared_ptr<Sdf> primative = nullptr;
+      if (prim < 0.25) {
+        primative = sdfSphere(1.0f);
+      } else if (prim < 0.5) {
+        primative = sdfBox({0.5f, 0.5f, 0.5f});
+      } else if (prim < 0.75) {
+        primative = sdfCylinder(1.0, 0.2);
+      } else {
+        primative = sdfTorus({1.0f, 0.3f});
+      }
+      if (type < 0.6) {
+        primative->mat = matDiff(colors[irand() % ncolors]);
+      } else if (type < 0.7) {
+        primative->mat = matSpec(colors[irand() % ncolors]);
+      } else if (type < 0.8) {
+        primative->mat = matRefr(frand() + 1.0f, colors[irand() % ncolors]);
+      } else {
+        primative->mat =
+            matEmis(100.0f * frand() + 50.0f, colors[irand() % ncolors]);
+      }
+      primative->rotate(M_PI / 2.0f * frand(), {frand(), frand(), frand()});
+      primative->translate(3.0f * i, -5.0f, 3.0f * j);
+      objects.push_back(primative);
+      // objects.push_back(sdfInfiniteRepeat(primative, {60.0f,
+      // INFINITY, 60.0f}));
     }
   }
 
