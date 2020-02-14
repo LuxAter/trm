@@ -13,7 +13,6 @@
 #define GLM_FORCE_SWIZZLE
 #define GLM_LEFT_HANDED
 
-#include <cxxopts.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <glm/glm.hpp>
@@ -44,6 +43,24 @@ typedef float Float;
 struct Sdf;
 struct Mat;
 
+std::ostream &operator<<(std::ostream &out, const Vec3 &v) {
+  return out << fmt::format("[{}, {}, {}]", v.x, v.y, v.z);
+}
+std::istream &operator>>(std::istream &in, Vec3 &v) {
+  in >> v.x;
+  if (in.peek() != ',')
+    throw std::logic_error("expected a ','");
+  in.ignore(1, ' ');
+  in >> v.y;
+  if (in.peek() != ',')
+    throw std::logic_error("expected a ','");
+  in.ignore(1, ' ');
+  in >> v.z;
+  return in;
+}
+
+#include <cxxopts.hpp>
+
 // Ray structure
 struct Ray {
   Ray(const Vec3 &o, const Vec3 &d) : o(o), d(normalize(d)), medium(nullptr) {}
@@ -60,9 +77,9 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(5000, 5000);
+static uvec2 resolution = uvec2(500, 500);
 static std::size_t maximum_depth = 16;
-static std::size_t spp = 256;
+static std::size_t spp = 4;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 static bool progress_display = true;
@@ -383,22 +400,6 @@ sdfSmoothIntersection(const std::shared_ptr<Sdf> &a,
                                               Mat4(1.0), mat);
 }
 
-std::ostream &operator<<(std::ostream &out, const Vec3 &v) {
-  return out << fmt::format("[{}, {}, {}]", v.x, v.y, v.z);
-}
-std::istream &operator>>(std::istream &in, Vec3 &v) {
-  in >> v.x;
-  if (in.peek() != ',')
-    throw std::logic_error("expected a ','");
-  in.ignore(1, ' ');
-  in >> v.y;
-  if (in.peek() != ',')
-    throw std::logic_error("expected a ','");
-  in.ignore(1, ' ');
-  in >> v.z;
-  return in;
-}
-
 Vec3 hemisphere(const Float &u1, const Float &u2) {
   const Float r = sqrt(1.0 - u1 * u1);
   const Float phi = 2 * M_PI * u2;
@@ -569,138 +570,162 @@ int main(int argc, char *argv[]) {
   PROF_END();
   PROF_BEGIN("scene", "main");
 
-  objects.push_back(sdfPlane({0.0, 1.0, 0.0, -5.0}, matDiff({1.0, 1.0, 1.0})));
-  objects.push_back(
-      sdfPlane({0.0, -1.0, 0.0, -1.0}, matEmis(10.0, {1.0, 1.0, 1.0})));
-  objects.push_back(
-      sdfPlane({-1.0, 0.0, 0.0, -10.0}, matDiff({1.0, 0.2, 0.2})));
-  objects.push_back(sdfPlane({1.0, 0.0, 0.0, -10.0}, matDiff({0.2, 1.0, 0.2})));
-  objects.push_back(
-      sdfPlane({0.0, 0.0, -1.0, -20.0}, matDiff({0.2, 0.2, 1.0})));
-  objects.push_back(sdfPlane({0.0, 0.0, 1.0, 0.0}, matDiff({1.0, 1.0, 1.0})));
+  int ncolors = 15;
+  Vec3 colors[] = {Vec3(244, 67, 54) / 255.0f,  Vec3(233, 30, 99) / 255.0f,
+                   Vec3(156, 39, 176) / 255.0f, Vec3(103, 58, 183) / 255.0f,
+                   Vec3(63, 81, 181) / 255.0f,  Vec3(33, 150, 243) / 255.0f,
+                   Vec3(3, 169, 244) / 255.0f,  Vec3(0, 188, 212) / 255.0f,
+                   Vec3(0, 150, 136) / 255.0f,  Vec3(76, 175, 80) / 255.0f,
+                   Vec3(139, 195, 74) / 255.0f, Vec3(205, 220, 57) / 255.0f,
+                   Vec3(255, 235, 59) / 255.0f, Vec3(255, 193, 7) / 255.0f,
+                   Vec3(255, 152, 0) / 255.0f};
 
-  auto white_diff = matDiff({1.0, 1.0, 1.0});
-  auto white_spec = matSpec({1.0, 1.0, 1.0});
-  auto white_refr = matRefr(1.5, {1.0, 1.0, 1.0});
-  auto rand_rot = []() { return normalize(Vec3(frand(), frand(), frand())); };
-
-  objects.push_back(sdfSphere(0.75, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 10.0f));
-  objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-3.0f, -4.0f, 10.0f));
-  objects.push_back(sdfCylinder(1.0, 0.2, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 10.0f));
-  objects.push_back(sdfTorus({1.0, 0.3}, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 7.0f));
-  objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 13.0f));
-
-  objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
-                                   sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                   0.2, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-3.0f, -4.0f, 7.0f));
+  objects.push_back(sdfPlane({0.0, 1.0, 0.0, -2.0}, matDiff({1.0, 1.0, 1.0})));
   objects.push_back(
-      sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
-                            sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
-                            white_diff)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(3.0f, -4.0f, 7.0f));
-  objects.push_back(
-      sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                           sdfBox({1.0, 0.5, 1.0}), 0.2, white_diff)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-3.0f, -4.0f, 13.0f));
+      sdfPlane({0.0, -1.0, 0.0, -20.0}, matEmis(1.0, {1.0, 1.0, 1.0})));
 
-  objects.push_back(sdfSphere(0.75, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 13.0f));
-  objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 4.0f));
-  objects.push_back(sdfCylinder(1.0, 0.2, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 16.0f));
-  objects.push_back(sdfTorus({1.0, 0.3}, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(6.0f, -4.0f, 10.0f));
-  objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-6.0f, -4.0f, 10.0f));
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 5; ++j) {
+      objects.push_back(
+          sdfSphere(0.75 * frand() + 0.25, matDiff(colors[irand() % ncolors]))
+              ->translate(2.0f * i, -1.0f, 2.0f * j));
+    }
+  }
 
-  objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
-                                   sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                   0.2, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-6.0f, -4.0f, 7.0f));
-  objects.push_back(
-      sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
-                            sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
-                            white_spec)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(6.0f, -4.0f, 7.0f));
-  objects.push_back(
-      sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                           sdfBox({1.0, 0.5, 1.0}), 0.2, white_spec)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-6.0f, -4.0f, 13.0f));
+  // objects.push_back(sdfPlane({0.0, 1.0, 0.0, -5.0},
+  // matDiff({1.0, 1.0, 1.0}))); objects.push_back(
+  //     sdfPlane({0.0, -1.0, 0.0, -1.0}, matEmis(10.0, {1.0, 1.0, 1.0})));
+  // objects.push_back(
+  //     sdfPlane({-1.0, 0.0, 0.0, -10.0}, matDiff({1.0, 0.2, 0.2})));
+  // objects.push_back(sdfPlane({1.0, 0.0, 0.0, -10.0}, matDiff({0.2, 1.0,
+  // 0.2}))); objects.push_back(
+  //     sdfPlane({0.0, 0.0, -1.0, -20.0}, matDiff({0.2, 0.2, 1.0})));
+  // objects.push_back(sdfPlane({0.0, 0.0, 1.0, 0.0},
+  // matDiff({1.0, 1.0, 1.0})));
 
-  objects.push_back(sdfSphere(0.75, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(6.0f, -4.0f, 13.0f));
-  objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(6.0f, -4.0f, 7.0f));
-  objects.push_back(sdfCylinder(1.0, 0.2, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 4.0f));
-  objects.push_back(sdfTorus({1.0, 0.3}, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-3.0f, -4.0f, 4.0f));
-  objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 16.0f));
-
-  objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
-                                   sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                   0.2, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-3.0f, -4.0f, 16.0f));
-  objects.push_back(
-      sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
-                            sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
-                            white_refr)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(6.0f, -4.0f, 16.0f));
-  objects.push_back(
-      sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                           sdfBox({1.0, 0.5, 1.0}), 0.2, white_refr)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-6.0f, -4.0f, 4.0f));
+  // auto white_diff = matDiff({1.0, 1.0, 1.0});
+  // auto white_spec = matSpec({1.0, 1.0, 1.0});
+  // auto white_refr = matRefr(1.5, {1.0, 1.0, 1.0});
+  // auto rand_rot = []() { return normalize(Vec3(frand(), frand(), frand()));
+  // };
+  //
+  // objects.push_back(sdfSphere(0.75, white_diff)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(0.0f, -4.0f, 10.0f));
+  // objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_diff)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(-3.0f, -4.0f, 10.0f));
+  // objects.push_back(sdfCylinder(1.0, 0.2, white_diff)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(3.0f, -4.0f, 10.0f));
+  // objects.push_back(sdfTorus({1.0, 0.3}, white_diff)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(0.0f, -4.0f, 7.0f));
+  // objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_diff)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(0.0f, -4.0f, 13.0f));
+  //
+  // objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
+  //                                  sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+  //                                  0.2, white_diff)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(-3.0f, -4.0f, 7.0f));
+  // objects.push_back(
+  //     sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
+  //                           sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
+  //                           white_diff)
+  //         ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //         ->translate(3.0f, -4.0f, 7.0f));
+  // objects.push_back(
+  //     sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+  //                          sdfBox({1.0, 0.5, 1.0}), 0.2, white_diff)
+  //         ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //         ->translate(-3.0f, -4.0f, 13.0f));
+  //
+  // objects.push_back(sdfSphere(0.75, white_spec)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(3.0f, -4.0f, 13.0f));
+  // objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_spec)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(0.0f, -4.0f, 4.0f));
+  // objects.push_back(sdfCylinder(1.0, 0.2, white_spec)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(0.0f, -4.0f, 16.0f));
+  // objects.push_back(sdfTorus({1.0, 0.3}, white_spec)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(6.0f, -4.0f, 10.0f));
+  // objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_spec)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(-6.0f, -4.0f, 10.0f));
+  //
+  // objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
+  //                                  sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+  //                                  0.2, white_spec)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(-6.0f, -4.0f, 7.0f));
+  // objects.push_back(
+  //     sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
+  //                           sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
+  //                           white_spec)
+  //         ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //         ->translate(6.0f, -4.0f, 7.0f));
+  // objects.push_back(
+  //     sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+  //                          sdfBox({1.0, 0.5, 1.0}), 0.2, white_spec)
+  //         ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //         ->translate(-6.0f, -4.0f, 13.0f));
+  //
+  // objects.push_back(sdfSphere(0.75, white_refr)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(6.0f, -4.0f, 13.0f));
+  // objects.push_back(sdfBox({0.5, 0.5, 0.5}, white_refr)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(6.0f, -4.0f, 7.0f));
+  // objects.push_back(sdfCylinder(1.0, 0.2, white_refr)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(3.0f, -4.0f, 4.0f));
+  // objects.push_back(sdfTorus({1.0, 0.3}, white_refr)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(-3.0f, -4.0f, 4.0f));
+  // objects.push_back(sdfRound(sdfBox({0.4, 0.4, 0.4}), 0.1, white_refr)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(3.0f, -4.0f, 16.0f));
+  //
+  // objects.push_back(sdfSmoothUnion(sdfBox({1.0, 0.5, 1.0}),
+  //                                  sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+  //                                  0.2, white_refr)
+  //                       ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //                       ->translate(-3.0f, -4.0f, 16.0f));
+  // objects.push_back(
+  //     sdfSmoothIntersection(sdfBox({1.0, 0.5, 1.0}),
+  //                           sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
+  //                           white_refr)
+  //         ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //         ->translate(6.0f, -4.0f, 16.0f));
+  // objects.push_back(
+  //     sdfSmoothSubtraction(sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
+  //                          sdfBox({1.0, 0.5, 1.0}), 0.2, white_refr)
+  //         ->rotate(M_PI / 2.0f * frand(), rand_rot())
+  //         ->translate(-6.0f, -4.0f, 4.0f));
 
   PROF_END();
-  // render(0, 0.0f, 1 / 60.0f);
+  render(0, 0.0f, 1 / 60.0f);
 
-  Interpolation<Float, Vec3> interp(hermite<Float, Vec3>);
-  interp.insert(-1.0, Vec3(-9.9f, 0.0f, 10.0f));
-  interp.insert(0.0, Vec3(0.0f, 0.0f, 0.1f));
-  interp.insert(1.0, Vec3(9.9f, 0.0f, 10.0f));
-  interp.insert(2.0, Vec3(0.0f, 0.0f, 19.9f));
-  interp.insert(3.0, Vec3(-9.9f, 0.0f, 10.0f));
-  interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
-  interp.insert(5.0, Vec3(9.9f, 0.0f, 10.0f));
-  std::size_t frame = 0;
-  for (Float i = interp.begin(1); i <= interp.end(-1); i += 0.01) {
-    camera.pos = interp[i];
-    render(frame, i, 1 / 60.0);
-    frame++;
-    // std::cout << i << "->" << interp[i] << "\n";
-  }
+  // Interpolation<Float, Vec3> interp(hermite<Float, Vec3>);
+  // interp.insert(-1.0, Vec3(-9.9f, 0.0f, 10.0f));
+  // interp.insert(0.0, Vec3(0.0f, 0.0f, 0.1f));
+  // interp.insert(1.0, Vec3(9.9f, 0.0f, 10.0f));
+  // interp.insert(2.0, Vec3(0.0f, 0.0f, 19.9f));
+  // interp.insert(3.0, Vec3(-9.9f, 0.0f, 10.0f));
+  // interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
+  // interp.insert(5.0, Vec3(9.9f, 0.0f, 10.0f));
+  // std::size_t frame = 0;
+  // for (Float i = interp.begin(1); i <= interp.end(-1); i += 0.01) {
+  //   camera.pos = interp[i];
+  //   render(frame, i, 1 / 60.0);
+  //   frame++;
+  //   // std::cout << i << "->" << interp[i] << "\n";
+  // }
 
   return 0;
 }

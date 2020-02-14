@@ -6,7 +6,8 @@
 #include <regex>
 #include <string>
 
-namespace std {
+namespace trm {
+
 template <class BidirIt, class Traits, class CharT, class UnaryFunction>
 std::basic_string<CharT>
 regex_replace(BidirIt first, BidirIt last,
@@ -45,9 +46,9 @@ template <class Traits, class CharT, class UnaryFunction>
 std::string regex_replace(const std::string &s,
                           const std::basic_regex<CharT, Traits> &re,
                           UnaryFunction f) {
-  return regex_replace(s.cbegin(), s.cend(), re, f);
+  return trm::regex_replace(s.cbegin(), s.cend(), re, f);
 }
-} // namespace std
+} // namespace trm
 
 ProgressBar::ProgressBar(const std::size_t &n, const std::string &desc,
                          const bool &nice_display)
@@ -233,7 +234,7 @@ void ProgressBar::display() {
   } catch (std::regex_error &e) {
     std::fprintf(stderr, "Regex: %s\n", e.what());
   }
-  meter = std::regex_replace(
+  meter = trm::regex_replace(
       meter,
       std::regex("\\{percentage(:([0-9]+)?(\\.([0-9]+))?)?(;(["
                  "krgybmcwKRGYBMCW\\*_]+))?\\}"),
@@ -246,7 +247,7 @@ void ProgressBar::display() {
       });
   for (std::string &&key :
        {"n", "total", "elapsed", "remaining", "rate", "bar", "desc"}) {
-    meter = std::regex_replace(
+    meter = trm::regex_replace(
         meter,
         std::regex("\\{" + key +
                    "(:(<|^|>)?([0-9]+)?)?(;([krgybmcKRGYBMCW\\*_]+))?\\}"),
