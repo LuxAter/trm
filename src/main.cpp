@@ -77,7 +77,7 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(100, 100);
+static uvec2 resolution = uvec2(1000, 1000);
 static std::size_t maximum_depth = 16;
 static std::size_t spp = 64;
 static std::vector<std::shared_ptr<Sdf>> objects;
@@ -624,7 +624,7 @@ int main(int argc, char *argv[]) {
         primative->mat = matRefr(frand() + 1.0f, colors[irand() % ncolors]);
       } else {
         primative->mat =
-            matEmis(100.0f * frand() + 50.0f, colors[irand() % ncolors]);
+            matEmis(150.0f, colors[irand() % ncolors]);
       }
       primative->rotate(M_PI / 2.0f * frand(), {frand(), frand(), frand()});
       primative->translate(3.0f * i, -5.0f, 3.0f * j);
