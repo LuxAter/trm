@@ -16,8 +16,8 @@ set(TRM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # ##############################################################################
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE
-    "Debug"
-    CACHE STRING "Build Mode" FORCE)
+      "Debug"
+      CACHE STRING "Build Mode" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -25,8 +25,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json")
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
-      ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json)
+              ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
+              ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json)
   endif()
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
@@ -83,7 +83,8 @@ macro(load_submodule REPO_NAME)
   clone_git(${REPO_NAME})
   string(TOUPPER ${REPO_NAME} MODULE_NAME)
   if(${MODULE_NAME}_FOUND)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/${REPO_NAME} EXCLUDE_FROM_ALL)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/${REPO_NAME}
+                     EXCLUDE_FROM_ALL)
   endif()
 endmacro()
 
@@ -93,6 +94,7 @@ endmacro()
 load_submodule(glm)
 load_submodule(cxxopts)
 load_submodule(fmt)
+load_submodule(json)
 
 # ##############################################################################
 # EXECUTABLE
@@ -101,7 +103,8 @@ set(SOURCES src/main.cpp src/bar.cpp src/img.cpp src/prof.cpp)
 add_executable(trm ${SOURCES})
 set_target_properties(
   trm PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
-target_link_libraries(trm glm::glm cxxopts::cxxopts fmt::fmt)
+target_link_libraries(trm glm::glm cxxopts::cxxopts fmt,
+                      nlohmann_json::nlohmann_json)
 
 # ##############################################################################
 # THREAD COMPUTE
