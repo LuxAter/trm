@@ -7,6 +7,7 @@ struct Material;
 
 namespace trm {
 struct Sdf : std::enable_shared_from_this<Sdf> {
+  Sdf();
   Sdf(const std::shared_ptr<Material> &mat);
   Float operator()(const Vec3 &p) const;
   Vec3 normal(const Vec3 &p,
@@ -20,7 +21,7 @@ struct Sdf : std::enable_shared_from_this<Sdf> {
   std::shared_ptr<Sdf> scale(const Vec3 &xyz);
   std::shared_ptr<Sdf> scale(const Float &x, const Float &y, const Float &z);
 
-  inline virtual Float dist(const Vec3 &) const;
+  inline virtual Float dist(const Vec3 &) const = 0;
 
   Mat4 trans, inv;
   std::shared_ptr<Material> mat;
@@ -42,6 +43,9 @@ struct Sphere : Sdf {
 struct Box : Sdf {
   template <typename... Args>
   Box(const Vec3 &dim, const Args &... args) : Sdf(args...), dim(dim) {}
+  template <typename... Args>
+  Box(const Float &x, const Float &y, const Float &z, const Args &... args)
+      : Sdf(args...), dim(x, y, z) {}
   inline Float dist(const Vec3 &p) const override {
     Vec3 q = abs(p) - dim;
     return length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
@@ -61,6 +65,9 @@ struct Cylinder : Sdf {
 struct Torus : Sdf {
   template <typename... Args>
   Torus(const Vec2 &t, const Args &... args) : Sdf(args...), torus(t) {}
+  template <typename... Args>
+  Torus(const Float &a, const Float &b, const Args &... args)
+      : Sdf(args...), torus(a, b) {}
   inline Float dist(const Vec3 &p) const override {
     Vec2 q = Vec2(length(p.xz()) - torus.x, p.y);
     return length(q) - torus.y;
@@ -71,6 +78,10 @@ struct Plane : Sdf {
   template <typename... Args>
   Plane(const Vec4 &n, const Args &... args)
       : Sdf(args...), norm(normalize(n)) {}
+  template <typename... Args>
+  Plane(const Float &x, const Float &y, const Float &z, const Float &w,
+        const Args &... args)
+      : Sdf(args...), norm(normalize(Vec4(x, y, z, w))) {}
   inline Float dist(const Vec3 &p) const override {
     return dot(p, norm.xyz()) - norm.w;
   }
@@ -90,8 +101,9 @@ struct Elongate : Sdf {
 };
 struct Round : Sdf {
   template <typename... Args>
-  Round(const Float &r, const std::shared_ptr<Sdf> &a, const Args &... args)
-      : Sdf(args...), radius(r), a(a) {}
+  Round(const std::shared_ptr<Sdf> &a, const Float &radius,
+        const Args &... args)
+      : Sdf(args...), radius(radius), a(a) {}
   inline Float dist(const Vec3 &p) const override { return (*a)(p)-radius; }
   Float radius;
   std::shared_ptr<Sdf> a;
@@ -138,6 +150,50 @@ struct Intersection : Sdf {
   }
   std::shared_ptr<Sdf> a, b;
 };
+struct SmoothUnion : Sdf {
+  template <typename... Args>
+  SmoothUnion(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
+              const Float &radius, const Args &... args)
+      : Sdf(args...), a(a), b(b), radius(radius) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float d1 = (*a)(p);
+    Float d2 = (*b)(p);
+    Float h = max(radius - abs(d1 - d2), 0.0f);
+    return min(d1, d2) - h * h * 0.25 / radius;
+  }
+  std::shared_ptr<Sdf> a, b;
+  Float radius;
+};
+struct SmoothSubtraction : Sdf {
+  template <typename... Args>
+  SmoothSubtraction(const std::shared_ptr<Sdf> &a,
+                    const std::shared_ptr<Sdf> &b, const Float &radius,
+                    const Args &... args)
+      : Sdf(args...), a(a), b(b), radius(radius) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float d1 = (*a)(p);
+    Float d2 = (*b)(p);
+    Float h = max(radius - abs(-d1 - d2), 0.0f);
+    return max(-d1, d2) + h * h * 0.25f / radius;
+  }
+  std::shared_ptr<Sdf> a, b;
+  Float radius;
+};
+struct SmoothIntersection : Sdf {
+  template <typename... Args>
+  SmoothIntersection(const std::shared_ptr<Sdf> &a,
+                     const std::shared_ptr<Sdf> &b, const Float &radius,
+                     const Args &... args)
+      : Sdf(args...), a(a), b(b), radius(radius) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float d1 = (*a)(p);
+    Float d2 = (*b)(p);
+    Float h = max(radius - abs(d1 - d2), 0.0f);
+    return max(d1, d2) + h * h * 0.25 / radius;
+  }
+  std::shared_ptr<Sdf> a, b;
+  Float radius;
+};
 
 SDF_GEN(Sphere);
 SDF_GEN(Box);
@@ -152,5 +208,9 @@ SDF_GEN(Onion);
 SDF_GEN(Union);
 SDF_GEN(Subtraction);
 SDF_GEN(Intersection);
+
+SDF_GEN(SmoothUnion);
+SDF_GEN(SmoothSubtraction);
+SDF_GEN(SmoothIntersection);
 
 } // namespace trm
