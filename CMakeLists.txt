@@ -108,8 +108,7 @@ set(SOURCES src/main.cpp src/bar.cpp src/img.cpp src/prof.cpp src/sdf.cpp)
 add_executable(trm ${SOURCES})
 set_target_properties(
   trm PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
-target_link_libraries(trm glm::glm cxxopts::cxxopts fmt::fmt
-                      nlohmann_json::nlohmann_json)
+target_link_libraries(trm glm::glm fmt::fmt)
 
 # ##############################################################################
 # THREAD COMPUTE

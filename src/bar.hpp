@@ -39,6 +39,4 @@ public:
   bool nice_display = false;
   std::string unit = "it";
   std::string bar_chars = "[=>-]";
-  std::string format_spec = "{desc;W} {percentage:3.0}% {bar:40;WCCcW} "
-                            "{n}/{total} [{elapsed}<{remaining}, {rate;B}]";
 };

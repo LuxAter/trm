@@ -17,6 +17,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "argparse.hpp"
 #include "bar.hpp"
 #include "img.hpp"
 #include "interp.hpp"
@@ -45,24 +46,6 @@ struct Sdf;
 }
 struct Material;
 
-std::ostream &operator<<(std::ostream &out, const Vec3 &v) {
-  return out << fmt::format("[{}, {}, {}]", v.x, v.y, v.z);
-}
-std::istream &operator>>(std::istream &in, Vec3 &v) {
-  in >> v.x;
-  if (in.peek() != ',')
-    throw std::logic_error("expected a ','");
-  in.ignore(1, ' ');
-  in >> v.y;
-  if (in.peek() != ',')
-    throw std::logic_error("expected a ','");
-  in.ignore(1, ' ');
-  in >> v.z;
-  return in;
-}
-
-#include <cxxopts.hpp>
-
 // Ray structure
 struct Ray {
   Ray(const Vec3 &o, const Vec3 &d) : o(o), d(normalize(d)), medium(nullptr) {}
@@ -84,7 +67,7 @@ static std::size_t maximum_depth = 16;
 static std::size_t spp = 4;
 static std::vector<std::shared_ptr<trm::Sdf>> objects;
 static Camera camera;
-static bool progress_display = true;
+static bool no_bar = false;
 
 static Float inter_pixel_arc = 0.0f;
 
@@ -233,7 +216,7 @@ void render(const std::size_t &frame, const Float &t_start,
   PROF_FUNC("renderer");
   ProgressBar bar(resolution.y * resolution.x,
                   fmt::format("Frame: {:5d} @ {:7.3f}", frame, t_start),
-                  progress_display);
+                  !no_bar);
   bar.unit_scale = true;
   bar.unit = "px";
   uint8_t *buffer =
@@ -274,7 +257,32 @@ void render(const std::size_t &frame, const Float &t_start,
 int main(int argc, char *argv[]) {
   PROF_BEGIN("cxxopts", "main", "argc", argc, "argv",
              std::vector<std::string>(argv + 1, argv + argc));
-  cxxopts::Options options("trm", "Tiny Ray Marcher");
+
+  std::string output_fmt = "{frame:010}.png";
+  bool show_help = false;
+
+  trm::argparse::Parser parser("Tiny Ray Marcher");
+  parser.add("-h,--help", "show this help message", &show_help);
+  parser.add("-o,--output", "output file path", &output_fmt);
+  parser.add("-s,--spp", &spp, "samples per pixel");
+  parser.add("--fov", &fov, "field of view");
+  parser.add("--max", &maximum_distance, "maximum distance for rays to travel");
+  parser.add("--min", &epsilon_distance,
+             "distance to consider as an intersection");
+  parser.add("-d,--depth", &maximum_depth,
+             "number of reflections/refractions to compute");
+  parser.add("-B,--no-bar", &no_bar, "display fancy progress bar");
+  parser.add("-r,--res,--resolution", &resolution,
+             "resolution of output image");
+
+  parser.parse(argc, argv);
+
+  if (show_help) {
+    parser.help();
+    return 0;
+  }
+
+  /*cxxopts::Options options("trm", "Tiny Ray Marcher");
   options.show_positional_help();
   options.add_options("Camera")("p,position", "position of the camera",
                                 cxxopts::value<Vec3>())(
@@ -296,9 +304,6 @@ int main(int argc, char *argv[]) {
     progress_display = false;
   }
 
-  camera.pos = Vec3(0.0f, 0.0f, 0.01f);
-  camera.up = Vec3(0.0f, 1.0f, 0.0f);
-  camera.center = Vec3(0.0f, -5.0f, 10.0f);
 
   if (result.count("position")) {
     camera.pos = result["position"].as<Vec3>();
@@ -308,7 +313,11 @@ int main(int argc, char *argv[]) {
   }
   if (result.count("up")) {
     camera.up = result["up"].as<Vec3>();
-  }
+  }*/
+
+  camera.pos = Vec3(0.0f, 0.0f, 0.01f);
+  camera.up = Vec3(0.0f, 1.0f, 0.0f);
+  camera.center = Vec3(0.0f, -5.0f, 10.0f);
 
   PROF_END();
   PROF_BEGIN("scene", "main");

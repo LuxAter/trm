@@ -3,52 +3,7 @@
 #include <chrono>
 #include <cstdio>
 #include <fmt/format.h>
-#include <regex>
 #include <string>
-
-namespace trm {
-
-template <class BidirIt, class Traits, class CharT, class UnaryFunction>
-std::basic_string<CharT>
-regex_replace(BidirIt first, BidirIt last,
-              const std::basic_regex<CharT, Traits> &re, UnaryFunction f) {
-  std::basic_string<CharT> s;
-
-  typename std::match_results<BidirIt>::difference_type positionOfLastMatch = 0;
-  auto endOfLastMatch = first;
-
-  auto callback = [&](const std::match_results<BidirIt> &match) {
-    auto positionOfThisMatch = match.position(0);
-    auto diff = positionOfThisMatch - positionOfLastMatch;
-
-    auto startOfThisMatch = endOfLastMatch;
-    std::advance(startOfThisMatch, diff);
-
-    s.append(endOfLastMatch, startOfThisMatch);
-    s.append(f(match));
-
-    auto lengthOfMatch = match.length(0);
-
-    positionOfLastMatch = positionOfThisMatch + lengthOfMatch;
-
-    endOfLastMatch = startOfThisMatch;
-    std::advance(endOfLastMatch, lengthOfMatch);
-  };
-
-  std::regex_iterator<BidirIt> begin(first, last, re), end;
-  std::for_each(begin, end, callback);
-
-  s.append(endOfLastMatch, last);
-
-  return s;
-}
-template <class Traits, class CharT, class UnaryFunction>
-std::string regex_replace(const std::string &s,
-                          const std::basic_regex<CharT, Traits> &re,
-                          UnaryFunction f) {
-  return trm::regex_replace(s.cbegin(), s.cend(), re, f);
-}
-} // namespace trm
 
 ProgressBar::ProgressBar(const std::size_t &n, const std::string &desc,
                          const bool &nice_display)
@@ -227,71 +182,10 @@ void ProgressBar::display() {
   float frac = static_cast<float>(n) / static_cast<float>(total);
   float percentage = frac * 100.0;
 
-  std::string meter = format_spec;
-  std::smatch results;
-  try {
-    std::regex tmp("\\{percentage\\}");
-  } catch (std::regex_error &e) {
-    std::fprintf(stderr, "Regex: %s\n", e.what());
-  }
-  meter = trm::regex_replace(
-      meter,
-      std::regex("\\{percentage(:([0-9]+)?(\\.([0-9]+))?)?(;(["
-                 "krgybmcwKRGYBMCW\\*_]+))?\\}"),
-      [percentage, this](const std::smatch &match) {
-        std::string fmt_spec = "{:" + (match[2].matched ? match[2].str() : "") +
-                               (match[4].matched ? "." + match[4].str() : "") +
-                               "f}";
-        return format_color(match[5].matched ? match[5].str()[0] : '_',
-                            fmt::format(fmt_spec, percentage));
-      });
-  for (std::string &&key :
-       {"n", "total", "elapsed", "remaining", "rate", "bar", "desc"}) {
-    meter = trm::regex_replace(
-        meter,
-        std::regex("\\{" + key +
-                   "(:(<|^|>)?([0-9]+)?)?(;([krgybmcKRGYBMCW\\*_]+))?\\}"),
-        [key, n_str, total_str, elapsed_str, remaining_str, rate_str, frac,
-         this](const std::smatch &match) {
-          std::string val = "";
-          char align = match[2].matched ? match[2].str()[0] : '>';
-          int fmt_width = match[3].matched ? std::stoi(match[3]) : -1;
-          std::string fmt_color = match[5].matched ? match[5].str() : "_____";
-          if (key == "n") {
-            val = n_str;
-          } else if (key == "total") {
-            val = total_str;
-          } else if (key == "elapsed") {
-            val = elapsed_str;
-          } else if (key == "remaining") {
-            val = remaining_str;
-          } else if (key == "rate") {
-            val = rate_str;
-          } else if (key == "bar") {
-            if (fmt_color.size() < 5) {
-              fmt_color += std::string(5 - fmt_color.size(), fmt_color.back());
-            }
-            val = format_bar(frac, fmt_width != -1 ? fmt_width : 20,
-                             this->bar_chars, fmt_color);
-          } else if (key == "desc") {
-            val = this->desc;
-          }
-          if (fmt_width != -1 &&
-              static_cast<int>(display_len(val)) < fmt_width) {
-            std::size_t str_disp_len = display_len(val);
-            if (align == '<') {
-              val = val + std::string(fmt_width - str_disp_len, ' ');
-            } else if (align == '^') {
-              val = std::string((fmt_width - str_disp_len) / 2, ' ') + val +
-                    std::string((fmt_width - str_disp_len) / 2, ' ');
-
-            } else {
-              val = std::string(fmt_width - str_disp_len, ' ') + val;
-            }
-          }
-          return format_color(fmt_color[0], val);
-        });
-  }
+  std::string meter = fmt::format(
+      "{} {:3.0f}% {} {}/{} [{}<{} {}]", format_color('W', desc), percentage,
+      format_bar(frac, 40, this->bar_chars, "WCCcW"), n_str, total_str,
+      elapsed_str, remaining_str, format_color('B', rate_str));
   if (nice_display == false) {
     std::fprintf(stdout, "%s\n", meter.c_str());
   } else {
