@@ -77,12 +77,14 @@ struct Camera {
 static Float maximum_distance = 1e3;
 static Float epsilon_distance = 1e-3;
 static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(1000, 1000);
+static uvec2 resolution = uvec2(100, 100);
 static std::size_t maximum_depth = 16;
-static std::size_t spp = 64;
+static std::size_t spp = 16;
 static std::vector<std::shared_ptr<Sdf>> objects;
 static Camera camera;
 static bool progress_display = true;
+
+static Float inter_pixel_arc = 0.0f;
 
 // Random number generator
 std::random_device rd;
@@ -439,12 +441,18 @@ std::tuple<Float, std::shared_ptr<Sdf>> sdfScene(const Vec3 &p) {
   return std::make_tuple(dist, closest_obj);
 }
 
-std::tuple<Float, std::shared_ptr<Sdf>> rayMarch(const Ray &r) {
-  Float dist = 0.0;
+std::tuple<Float, std::shared_ptr<Sdf>> rayMarch(const Ray &r,
+                                                 Float *safe_depth) {
+  Float dist = (safe_depth != nullptr) ? *safe_depth : 0.0f;
   Float delta_dist = 0.0;
+  bool not_safe = false;
   std::shared_ptr<Sdf> obj = nullptr;
   for (dist = 0.0; dist < maximum_distance; dist += delta_dist) {
     std::tie(delta_dist, obj) = sdfScene(r.o + dist * r.d);
+    if (!not_safe && safe_depth != nullptr && delta_dist < inter_pixel_arc) {
+      *safe_depth = dist;
+      not_safe = true;
+    }
     if (delta_dist < epsilon_distance) {
       return std::make_tuple(dist, obj);
     }
@@ -452,7 +460,7 @@ std::tuple<Float, std::shared_ptr<Sdf>> rayMarch(const Ray &r) {
   return std::make_tuple(dist, nullptr);
 }
 
-Vec3 trace(const Ray &r, std::size_t depth = 0) {
+Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
   Float rr_factor = 1.0;
   Vec3 color(0.0f);
   if (depth >= maximum_depth) {
@@ -464,7 +472,7 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
   }
   Float t;
   std::shared_ptr<Sdf> obj;
-  std::tie(t, obj) = rayMarch(r);
+  std::tie(t, obj) = rayMarch(r, safe_depth);
   if (obj == nullptr)
     return color;
 
@@ -483,13 +491,15 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
     rotated_dir.y = dot(Vec3(rotx.y, roty.y, n.y), sampled_dir);
     rotated_dir.z = dot(Vec3(rotx.z, roty.z, n.z), sampled_dir);
     Float cost = dot(rotated_dir, n);
-    color += trace({hp + (10.0f * epsilon_distance * rotated_dir), rotated_dir},
-                   depth + 1) *
+    color += trace({hp + (10.0f * epsilon_distance * rotated_dir), rotated_dir,
+                    r.medium},
+                   nullptr, depth + 1) *
              obj->mat->color * cost * rr_factor * 0.25f; // Should be 0.1f
   } else if (obj->mat->type == Mat::SPEC) {
     Vec3 new_dir = normalize(reflect(r.d, n));
     color +=
-        trace({hp + (10.0f * epsilon_distance * new_dir), new_dir}, depth + 1) *
+        trace({hp + (10.0f * epsilon_distance * new_dir), new_dir, r.medium},
+              nullptr, depth + 1) *
         rr_factor;
   } else if (obj->mat->type == Mat::REFR) {
     Vec3 new_dir =
@@ -499,7 +509,7 @@ Vec3 trace(const Ray &r, std::size_t depth = 0) {
     color += trace({hp + (10.0f * epsilon_distance * new_dir), new_dir,
                     (r.medium != nullptr && r.medium == obj->mat) ? nullptr
                                                                   : obj->mat},
-                   depth + 1) *
+                   nullptr, depth + 1) *
              1.15f * rr_factor;
   }
   return color;
@@ -519,17 +529,19 @@ void render(const std::size_t &frame, const Float &t_start,
   Mat4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
   Float filmz = resolution.x / (2.0f * tan(fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+  inter_pixel_arc = sqrt(2.0f) / filmz;
 #pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
   for (std::size_t i = 0; i < resolution.x * resolution.y; ++i) {
     PROF_SCOPED("pixel", "renderer");
     std::size_t x = i % resolution.x;
     std::size_t y = i / resolution.x;
     vec3 color(0.0f, 0.0f, 0.0f);
+    Float safe_depth = 0.0f;
     for (std::size_t s = 0; s < spp; ++s) {
       Ray ray(origin,
               view * Vec4(x - resolution.x / 2.0f + frand(),
                           y - resolution.y / 2.0f + frand(), filmz, 0.0f));
-      color += trace(ray) / Float(spp);
+      color += trace(ray, nullptr) / Float(spp);
     }
     buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
     buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
@@ -606,30 +618,29 @@ int main(int argc, char *argv[]) {
     for (int j = 0; j < 20; ++j) {
       Float prim = frand();
       Float type = frand();
-      std::shared_ptr<Sdf> primative = nullptr;
+      std::shared_ptr<Sdf> primitive = nullptr;
       if (prim < 0.25) {
-        primative = sdfSphere(1.0f);
+        primitive = sdfSphere(1.0f);
       } else if (prim < 0.5) {
-        primative = sdfBox({0.5f, 0.5f, 0.5f});
+        primitive = sdfBox({0.5f, 0.5f, 0.5f});
       } else if (prim < 0.75) {
-        primative = sdfCylinder(1.0, 0.2);
+        primitive = sdfCylinder(1.0, 0.2);
       } else {
-        primative = sdfTorus({1.0f, 0.3f});
+        primitive = sdfTorus({1.0f, 0.3f});
       }
       if (type < 0.6) {
-        primative->mat = matDiff(colors[irand() % ncolors]);
+        primitive->mat = matDiff(colors[irand() % ncolors]);
       } else if (type < 0.7) {
-        primative->mat = matSpec(colors[irand() % ncolors]);
+        primitive->mat = matSpec(colors[irand() % ncolors]);
       } else if (type < 0.8) {
-        primative->mat = matRefr(frand() + 1.0f, colors[irand() % ncolors]);
+        primitive->mat = matRefr(frand() + 1.0f, colors[irand() % ncolors]);
       } else {
-        primative->mat =
-            matEmis(150.0f, colors[irand() % ncolors]);
+        primitive->mat = matEmis(150.0f, colors[irand() % ncolors]);
       }
-      primative->rotate(M_PI / 2.0f * frand(), {frand(), frand(), frand()});
-      primative->translate(3.0f * i, -5.0f, 3.0f * j);
-      objects.push_back(primative);
-      // objects.push_back(sdfInfiniteRepeat(primative, {60.0f,
+      primitive->rotate(M_PI / 2.0f * frand(), {frand(), frand(), frand()});
+      primitive->translate(3.0f * i, -5.0f, 3.0f * j);
+      objects.push_back(primitive);
+      // objects.push_back(sdfInfiniteRepeat(primitive, {60.0f,
       // INFINITY, 60.0f}));
     }
   }

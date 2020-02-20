@@ -1,7 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1581631255 "/home/arden/programming/trm/docs/trm.tex" "/home/arden/programming/trm/docs/trm.pdf" "trm" 1581631255
-  "/home/arden/programming/trm/docs/trm.aux" 1581631255 841 643207bb4e540d9224793b04bea37ebb ""
-  "/home/arden/programming/trm/docs/trm.tex" 1581631252 618 0c406f4c87d0daa5f937e1431170a319 ""
+["pdflatex"] 1581758280 "trm.tex" "trm.pdf" "trm" 1581758280
   "/usr/share/texmf-dist/fonts/map/fontname/texfonts.map" 1572595918 3332 103109f5612ad95229751940c61aada0 ""
   "/usr/share/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1572595918 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1572595918 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -25,6 +23,7 @@
   "/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1572595918 35752 024fb6c41858982481f6968b5fc26508 ""
   "/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1572595918 32762 224316ccc9ad3ca0423a14971cfa7fc1 ""
   "/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1572595918 32726 0a1aea6fcd6468ee2cf64d891f5c43c8 ""
+  "/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1572595918 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb" 1572595918 35660 fb24af7afbadb71801619f1415838111 ""
   "/usr/share/texmf-dist/tex/latex/amscls/amsart.cls" 1572595918 61802 787c5e05304c54966a11305c2c1a05bd ""
   "/usr/share/texmf-dist/tex/latex/amsfonts/amsfonts.sty" 1572595918 5949 3f3fd50a8cc94c3d4cbf4fc66cd3df1c ""
@@ -36,13 +35,11 @@
   "/usr/share/texmf-dist/tex/latex/amsmath/amsopn.sty" 1572595918 4116 32e6abd27229755a83a8b7f18e583890 ""
   "/usr/share/texmf-dist/tex/latex/amsmath/amstext.sty" 1572595918 2432 8ff93b1137020e8f21930562a874ae66 ""
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1572595918 33301 a3134070eacafb10b1f371612ce2650d ""
-  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1581112995 4572998 f9631eebba48c3ee98e5d310044b0a09 ""
-  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1581112967 8044938 38e3299320490283fda4f7eafe1da3ed ""
-  "trm.aux" 1581631255 841 643207bb4e540d9224793b04bea37ebb "pdflatex"
-  "trm.tex" 1581631252 618 0c406f4c87d0daa5f937e1431170a319 ""
+  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1581757155 4572998 f9631eebba48c3ee98e5d310044b0a09 ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1581757146 8044939 86d8d6b1ba7fafdb05de13b4e1c941d7 ""
+  "trm.aux" 1581758280 841 643207bb4e540d9224793b04bea37ebb "pdflatex"
+  "trm.tex" 1581758280 1744 540509885192a983ab0c6ffadd446751 ""
   (generated)
-  "trm.log"
-  "/home/arden/programming/trm/docs/trm.log"
-  "trm.aux"
-  "/home/arden/programming/trm/docs/trm.pdf"
   "trm.pdf"
+  "trm.log"
+  "trm.aux"
