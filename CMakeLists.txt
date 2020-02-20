@@ -1,7 +1,7 @@
 # ##############################################################################
 # PROJECT
 # ##############################################################################
-cmake_minimum_required(VERSION 3.14.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 project(trm VERSION 1.0.0)
 
 option(STATIC_ANALYSIS "Use static analysis tools" FALSE)
@@ -83,8 +83,13 @@ macro(load_submodule REPO_NAME)
   clone_git(${REPO_NAME})
   string(TOUPPER ${REPO_NAME} MODULE_NAME)
   if(${MODULE_NAME}_FOUND)
+    message(STATUS "FOUND PACKAGE: ${MODULE_NAME} / ${REPO_NAME}")
+    message(
+      STATUS "Module path: ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/${REPO_NAME}")
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/${REPO_NAME}
                      EXCLUDE_FROM_ALL)
+  else()
+    message(STATUS "DID not find ${MODULE_NAME")
   endif()
 endmacro()
 
@@ -99,11 +104,11 @@ load_submodule(json)
 # ##############################################################################
 # EXECUTABLE
 # ##############################################################################
-set(SOURCES src/main.cpp src/bar.cpp src/img.cpp src/prof.cpp)
+set(SOURCES src/main.cpp src/bar.cpp src/img.cpp src/prof.cpp src/sdf.cpp)
 add_executable(trm ${SOURCES})
 set_target_properties(
-  trm PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
-target_link_libraries(trm glm::glm cxxopts::cxxopts fmt,
+  trm PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
+target_link_libraries(trm glm::glm cxxopts::cxxopts fmt::fmt
                       nlohmann_json::nlohmann_json)
 
 # ##############################################################################

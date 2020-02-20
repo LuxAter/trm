@@ -1,5 +1,9 @@
 build/
 output/
+tags
+.clangd/
+.vim/
+.vscode/
 ### C++
 # Prerequisites
 *.d
