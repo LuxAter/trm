@@ -1,7 +1,7 @@
 # ##############################################################################
 # PROJECT
 # ##############################################################################
-cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14.0 FATAL_ERROR)
 project(trm VERSION 1.0.0)
 
 option(STATIC_ANALYSIS "Use static analysis tools" FALSE)
@@ -97,9 +97,7 @@ endmacro()
 # DEPENDENCIES
 # ##############################################################################
 load_submodule(glm)
-load_submodule(cxxopts)
 load_submodule(fmt)
-load_submodule(json)
 
 # ##############################################################################
 # EXECUTABLE

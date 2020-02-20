@@ -4,10 +4,29 @@
 #include <limits>
 #include <memory>
 
-trm::Sdf::Sdf()
-    : trans(1.0f), inv(1.0f), mat(nullptr) {}
+trm::Sdf::Sdf() : trans(1.0f), inv(1.0f), mat(nullptr) {}
 trm::Sdf::Sdf(const std::shared_ptr<Material> &mat)
     : trans(1.0f), inv(1.0f), mat(mat) {}
+
+void trm::Sdf::construct(const Float &t) {
+  trans = glm::translate(glm::mat4_cast(rotation[t]) *
+                             glm::scale(Mat4(1.0f), 1.0f / scaling[t]),
+                         translation[t]);
+  inv = glm::inverse(trans);
+  for (auto &var : varf) {
+    instantf[var.first] = var.second[t];
+  }
+  for (auto &var : varf2) {
+    instantf2[var.first] = var.second[t];
+  }
+  for (auto &var : varf3) {
+    instantf3[var.first] = var.second[t];
+  }
+  for (auto &var : varf4) {
+    instantf4[var.first] = var.second[t];
+  }
+}
+
 Float trm::Sdf::operator()(const Vec3 &p) const {
   return this->dist(Vec3(this->inv * Vec4(p, 1.0f)));
 }
@@ -22,40 +41,17 @@ Vec3 trm::Sdf::normal(const Vec3 &p, const Float &ep) {
                             this->dist(Vec3(op.x, op.y, op.z - ep)),
                         0.0f));
 }
-std::shared_ptr<trm::Sdf> trm::Sdf::translate(const Vec3 &xyz) {
-  this->trans = glm::translate(this->trans, xyz);
-  this->inv = glm::translate(this->inv, -xyz);
+std::shared_ptr<trm::Sdf> trm::Sdf::translate(const Float &t, const Vec3 &xyz) {
+  this->translation.insert(t, xyz);
   return shared_from_this();
 }
-std::shared_ptr<trm::Sdf> trm::Sdf::translate(const Float &x, const Float &y,
-                                              const Float &z) {
-  Vec3 xyz(x, y, z);
-  this->trans = glm::translate(this->trans, xyz);
-  this->inv = glm::translate(this->inv, -xyz);
-  return shared_from_this();
-}
-std::shared_ptr<trm::Sdf> trm::Sdf::rotate(const Float &angle,
+std::shared_ptr<trm::Sdf> trm::Sdf::rotate(const Float &t, const Float &angle,
                                            const Vec3 &axis) {
-  this->trans = glm::rotate(this->trans, angle, axis);
-  this->inv = glm::rotate(this->inv, -angle, axis);
+  this->rotation.insert(t,
+                        glm::quat_cast(glm::rotate(Mat4(1.0f), angle, axis)));
   return shared_from_this();
 }
-std::shared_ptr<trm::Sdf> trm::Sdf::rotate(const Float &angle, const Float &x,
-                                           const Float &y, const Float &z) {
-  Vec3 axis(x, y, z);
-  this->trans = glm::rotate(this->trans, angle, axis);
-  this->inv = glm::rotate(this->inv, -angle, axis);
-  return shared_from_this();
-}
-std::shared_ptr<trm::Sdf> trm::Sdf::scale(const Vec3 &xyz) {
-  this->trans = glm::scale(this->trans, xyz);
-  this->inv = glm::scale(this->inv, 1.0f / xyz);
-  return shared_from_this();
-}
-std::shared_ptr<trm::Sdf> trm::Sdf::scale(const Float &x, const Float &y,
-                                          const Float &z) {
-  Vec3 xyz(x, y, z);
-  this->trans = glm::scale(this->trans, xyz);
-  this->inv = glm::scale(this->inv, 1.0f / xyz);
+std::shared_ptr<trm::Sdf> trm::Sdf::scale(const Float &t, const Vec3 &xyz) {
+  this->scaling.insert(t, xyz);
   return shared_from_this();
 }

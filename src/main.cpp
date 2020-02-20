@@ -17,33 +17,23 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "argparse.hpp"
 #include "bar.hpp"
+#include "camera.hpp"
 #include "img.hpp"
 #include "interp.hpp"
 #include "prof.hpp"
 #include "sdf.hpp"
+#include "type.hpp"
 
 // PROF_STREAM_FILE("prof.json");
 
 using namespace glm;
 
-#ifdef DOUBLE_PERC
-typedef glm::dvec2 Vec2;
-typedef glm::dvec3 Vec3;
-typedef glm::dvec4 Vec4;
-typedef glm::dmat4 Material4;
-typedef double Float;
-#else
-typedef glm::vec2 Vec2;
-typedef glm::vec3 Vec3;
-typedef glm::vec4 Vec4;
-typedef glm::mat4 Material4;
-typedef float Float;
-#endif
-namespace trm {
-struct Sdf;
-}
 struct Material;
 
 // Ray structure
@@ -54,9 +44,6 @@ struct Ray {
   Vec3 o, d;
   std::shared_ptr<Material> medium;
 };
-struct Camera {
-  Vec3 pos, center, up;
-};
 
 // Global Variables set from main
 static Float maximum_distance = 1e3;
@@ -66,7 +53,7 @@ static uvec2 resolution = uvec2(500, 500);
 static std::size_t maximum_depth = 16;
 static std::size_t spp = 4;
 static std::vector<std::shared_ptr<trm::Sdf>> objects;
-static Camera camera;
+static trm::Camera camera;
 static bool no_bar = false;
 
 static Float inter_pixel_arc = 0.0f;
@@ -214,6 +201,9 @@ Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
 void render(const std::size_t &frame, const Float &t_start,
             const Float t_delta) {
   PROF_FUNC("renderer");
+#ifdef _OPENMP
+  std::printf("THREADS: %d\n", omp_get_max_threads());
+#endif
   ProgressBar bar(resolution.y * resolution.x,
                   fmt::format("Frame: {:5d} @ {:7.3f}", frame, t_start),
                   !no_bar);
@@ -222,7 +212,8 @@ void render(const std::size_t &frame, const Float &t_start,
   uint8_t *buffer =
       (uint8_t *)malloc(sizeof(uint8_t) * 3 * resolution.x * resolution.y);
 
-  Material4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
+  // Mat4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
+  Mat4 view(1.0f);
   Float filmz = resolution.x / (2.0f * tan(fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
   inter_pixel_arc = sqrt(2.0f) / filmz;
@@ -258,6 +249,7 @@ int main(int argc, char *argv[]) {
   PROF_BEGIN("cxxopts", "main", "argc", argc, "argv",
              std::vector<std::string>(argv + 1, argv + argc));
 
+  Float t_begin = 0.0f, t_end = 1.0f, t_delta = 0.1f, shutter = 1.0f / 60.0f;
   std::string output_fmt = "{frame:010}.png";
   bool show_help = false;
 
@@ -269,11 +261,16 @@ int main(int argc, char *argv[]) {
   parser.add("--max", &maximum_distance, "maximum distance for rays to travel");
   parser.add("--min", &epsilon_distance,
              "distance to consider as an intersection");
-  parser.add("-d,--depth", &maximum_depth,
+  parser.add("--depth", &maximum_depth,
              "number of reflections/refractions to compute");
   parser.add("-B,--no-bar", &no_bar, "display fancy progress bar");
   parser.add("-r,--res,--resolution", &resolution,
              "resolution of output image");
+  parser.add("-b,--begin", &t_begin, "starting time for render");
+  parser.add("-e,--end", &t_end, "ending time for render");
+  parser.add("-d,--delta", &t_delta, "time step between each frame");
+  parser.add("--shutter", &shutter,
+             "time for the camera shutter to remain open");
 
   parser.parse(argc, argv);
 
@@ -282,45 +279,9 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  /*cxxopts::Options options("trm", "Tiny Ray Marcher");
-  options.show_positional_help();
-  options.add_options("Camera")("p,position", "position of the camera",
-                                cxxopts::value<Vec3>())(
-      "c,center", "center of the cameras focus", cxxopts::value<Vec3>())(
-      "u,up", "direction that will be the top of the image",
-      cxxopts::value<Vec3>());
-  options.add_options()(
-      "o,output", "output file path",
-      cxxopts::value<std::string>()->default_value("{frame:010}.png"),
-      "FILEDESC");
-  options.add_options()("h,help", "show this help message")(
-      "no-bar", "disables fancy progress bar display");
-  auto result = options.parse(argc, argv);
-  if (result.count("help")) {
-    std::cout << options.help() << std::endl;
-    return 0;
-  }
-  if (result.count("no-bar")) {
-    progress_display = false;
-  }
-
-
-  if (result.count("position")) {
-    camera.pos = result["position"].as<Vec3>();
-  }
-  if (result.count("center")) {
-    camera.center = result["center"].as<Vec3>();
-  }
-  if (result.count("up")) {
-    camera.up = result["up"].as<Vec3>();
-  }*/
-
-  camera.pos = Vec3(0.0f, 0.0f, 0.01f);
-  camera.up = Vec3(0.0f, 1.0f, 0.0f);
-  camera.center = Vec3(0.0f, -5.0f, 10.0f);
-
-  PROF_END();
-  PROF_BEGIN("scene", "main");
+  camera.pos.values.front().second = Vec3(0.0f, 0.0f, 0.1f);
+  camera.center.values.front().second = Vec3(0.0f, -4.0f, 5.0f);
+  camera.pos.insert(1.0f, Vec3(0.0f, 0.0f, 9.9f));
 
   objects.push_back(
       trm::sdfPlane(0.0, 1.0, 0.0, -5.0, matDiff({1.0, 1.0, 1.0})));
@@ -335,115 +296,8 @@ int main(int argc, char *argv[]) {
   objects.push_back(
       trm::sdfPlane(0.0, 0.0, 1.0, 0.0, matDiff({1.0, 1.0, 1.0})));
 
-  auto white_diff = matDiff({1.0, 1.0, 1.0});
-  auto white_spec = matSpec({1.0, 1.0, 1.0});
-  auto white_refr = matRefr(1.5, {1.0, 1.0, 1.0});
-  auto rand_rot = []() { return normalize(Vec3(frand(), frand(), frand())); };
-
-  objects.push_back(trm::sdfSphere(0.75, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 10.0f));
-  objects.push_back(trm::sdfBox(0.5, 0.5, 0.5, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-3.0f, -4.0f, 10.0f));
-  objects.push_back(trm::sdfCylinder(1.0, 0.2, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 10.0f));
-  objects.push_back(trm::sdfTorus(1.0, 0.3, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 7.0f));
-  objects.push_back(trm::sdfRound(trm::sdfBox(0.4, 0.4, 0.4), 0.1, white_diff)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 13.0f));
-
-  objects.push_back(
-      trm::sdfSmoothUnion(trm::sdfBox(1.0, 0.5, 1.0),
-                          trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
-                          white_diff)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-3.0f, -4.0f, 7.0f));
-  objects.push_back(
-      trm::sdfSmoothIntersection(trm::sdfBox(1.0, 0.5, 1.0),
-                                 trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                 0.2, white_diff)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(3.0f, -4.0f, 7.0f));
-  objects.push_back(
-      trm::sdfSmoothSubtraction(trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                trm::sdfBox(1.0, 0.5, 1.0), 0.2, white_diff)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-3.0f, -4.0f, 13.0f));
-
-  objects.push_back(trm::sdfSphere(0.75, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 13.0f));
-  objects.push_back(trm::sdfBox(0.5, 0.5, 0.5, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 4.0f));
-  objects.push_back(trm::sdfCylinder(1.0, 0.2, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(0.0f, -4.0f, 16.0f));
-  objects.push_back(trm::sdfTorus(1.0, 0.3, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(6.0f, -4.0f, 10.0f));
-  objects.push_back(trm::sdfRound(trm::sdfBox(0.4, 0.4, 0.4), 0.1, white_spec)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-6.0f, -4.0f, 10.0f));
-
-  objects.push_back(
-      trm::sdfSmoothUnion(trm::sdfBox(1.0, 0.5, 1.0),
-                          trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
-                          white_spec)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-6.0f, -4.0f, 7.0f));
-  objects.push_back(
-      trm::sdfSmoothIntersection(trm::sdfBox(1.0, 0.5, 1.0),
-                                 trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                 0.2, white_spec)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(6.0f, -4.0f, 7.0f));
-  objects.push_back(
-      trm::sdfSmoothSubtraction(trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                trm::sdfBox(1.0, 0.5, 1.0), 0.2, white_spec)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-6.0f, -4.0f, 13.0f));
-
-  objects.push_back(trm::sdfSphere(0.75, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(6.0f, -4.0f, 13.0f));
-  objects.push_back(trm::sdfBox(0.5, 0.5, 0.5, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(6.0f, -4.0f, 7.0f));
-  objects.push_back(trm::sdfCylinder(1.0, 0.2, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 4.0f));
-  objects.push_back(trm::sdfTorus(1.0, 0.3, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(-3.0f, -4.0f, 4.0f));
-  objects.push_back(trm::sdfRound(trm::sdfBox(0.4, 0.4, 0.4), 0.1, white_refr)
-                        ->rotate(M_PI / 2.0f * frand(), rand_rot())
-                        ->translate(3.0f, -4.0f, 16.0f));
-
-  objects.push_back(
-      trm::sdfSmoothUnion(trm::sdfBox(1.0, 0.5, 1.0),
-                          trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0), 0.2,
-                          white_refr)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-3.0f, -4.0f, 16.0f));
-  objects.push_back(
-      trm::sdfSmoothIntersection(trm::sdfBox(1.0, 0.5, 1.0),
-                                 trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                 0.2, white_refr)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(6.0f, -4.0f, 16.0f));
-  objects.push_back(
-      trm::sdfSmoothSubtraction(trm::sdfSphere(0.5)->translate(0.0, 0.5, 0.0),
-                                trm::sdfBox(1.0, 0.5, 1.0), 0.2, white_refr)
-          ->rotate(M_PI / 2.0f * frand(), rand_rot())
-          ->translate(-6.0f, -4.0f, 4.0f));
-
   PROF_END();
-  render(0, 0.0f, 1 / 60.0f);
+  PROF_BEGIN("scene", "main");
 
   // Interpolation<Float, Vec3> interp(hermite<Float, Vec3>);
   // interp.insert(-1.0, Vec3(-9.9f, 0.0f, 10.0f));
@@ -453,13 +307,11 @@ int main(int argc, char *argv[]) {
   // interp.insert(3.0, Vec3(-9.9f, 0.0f, 10.0f));
   // interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
   // interp.insert(5.0, Vec3(9.9f, 0.0f, 10.0f));
-  // std::size_t frame = 0;
-  // for (Float i = interp.begin(1); i <= interp.end(-1); i += 0.01) {
-  //   camera.pos = interp[i];
-  //   render(frame, i, 1 / 60.0);
-  //   frame++;
-  //   // std::cout << i << "->" << interp[i] << "\n";
-  // }
+  std::size_t frame = 0;
+  for (Float i = camera.begin(1); i <= camera.end(-1); i += 0.01) {
+    render(frame, i, 1 / 60.0);
+    frame++;
+  }
 
   return 0;
 }

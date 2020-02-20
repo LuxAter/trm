@@ -1,0 +1,67 @@
+{
+  "spp": 32,
+  "resolution": [500, 500],
+  "time": [0.0, 4.0],
+  "timeStep": 0.1,
+  "camera": {
+    "fov": 1.5707,
+    "center": [0.0, -5.0, 5.0],
+    "up": [0.0, 1.0, 0.0],
+    "pos": [0.0, 0.0, 0.1]
+  },
+  "materials": {
+    "white": {
+      "shading": "DIFFUSE",
+      "color": [1.0, 1.0, 1.0]
+    },
+    "red": {
+      "shading": "DIFFUSE",
+      "color": [1.0, 0.2, 0.2]
+    },
+    "green": {
+      "shading": "DIFFUSE",
+      "color": [0.2, 1.0, 0.2]
+    },
+    "blue": {
+      "shading": "DIFFUSE",
+      "color": [0.2, 0.2, 1.0]
+    },
+    "light": {
+      "shading": "EMISSIVE",
+      "color": [1.0, 1.0, 1.0],
+      "emission": 10.0
+    }
+  },
+  "objects": {
+    "floor": {
+      "type": "PLANE",
+      "normal": [0.0, 1.0, 0.0, -5.0],
+      "material": "white"
+    },
+    "ceil": {
+      "type": "PLANE",
+      "normal": [0.0, -1.0, 0.0, -1.0],
+      "material": "light"
+    },
+    "left": {
+      "type": "PLANE",
+      "normal": [-1.0, 0.0, 0.0, -10.0],
+      "material": "red"
+    },
+    "right": {
+      "type": "PLANE",
+      "normal": [1.0, 0.0, 0.0, -10.0],
+      "material": "green"
+    },
+    "back": {
+      "type": "PLANE",
+      "normal": [0.0, 0.0, -1.0, -20.0],
+      "material": "blue"
+    },
+    "front": {
+      "type": "PLANE",
+      "normal": [0.0, 0.0, 1.0, 0.0],
+      "material": "white"
+    }
+  }
+}
