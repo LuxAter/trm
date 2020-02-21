@@ -1,6 +1,6 @@
 {
   "spp": 32,
-  "resolution": [250, 250],
+  "resolution": [500, 500],
   "camera": {
     "fov": 1.5707,
     "center": [0.0, 0.0, 0.0],
@@ -39,42 +39,52 @@
   },
   "objects": {
     "floor": {
-      "type": "PLANE",
+      "type": "plane",
       "normal": [0.0, 1.0, 0.0, -5],
       "material": "white"
     },
     "ceil": {
-      "type": "PLANE",
+      "type": "plane",
       "normal": [0.0, -1.0, 0.0, -15],
       "material": "light"
     },
     "left": {
-      "type": "PLANE",
+      "type": "plane",
       "normal": [-1.0, 0.0, 0.0, -15],
       "material": "red"
     },
     "right": {
-      "type": "PLANE",
+      "type": "plane",
       "normal": [1.0, 0.0, 0.0, -15],
       "material": "green"
     },
     "back": {
-      "type": "PLANE",
+      "type": "plane",
       "normal": [0.0, 0.0, -1.0, -15],
       "material": "blue"
     },
     "front": {
-      "type": "PLANE",
+      "type": "plane",
       "normal": [0.0, 0.0, 1.0, -15],
       "material": "white"
     },
-    "focus": {
-      "type": "TORUS",
+    "focus0": {
+      "type": "box",
+      "dim": [2.0, 1.0, 2.0]
+    },
+    "focus1": {
+      "type": "sphere",
       "radius": 1.0,
-      "radiusRevolve": 2.0,
-      "material": "glass",
+      "position": [0.0, 1.0, 0.0]
+    },
+    "focus": {
+      "type": "smoothUnion",
+      "a": "focus0",
+      "b": "focus1",
+      "radius": 0.2,
+      "material": "white",
       "position": [0.0, 0.0, 0.0],
-      "rotation": ["rand(-1.57,0)", "0.0", "rand(-1.57,1.57)"]
+      "rotation": [-0.7853, 0.7853, 0.0]
     }
   }
 }

@@ -4,9 +4,15 @@
 #include <limits>
 #include <memory>
 
-trm::Sdf::Sdf() : trans(1.0f), inv(1.0f), mat(nullptr) {}
+trm::Sdf::Sdf()
+    : trans(1.0f), inv(1.0f), mat(nullptr), a(nullptr), b(nullptr) {}
 trm::Sdf::Sdf(const std::shared_ptr<Material> &mat)
-    : trans(1.0f), inv(1.0f), mat(mat) {}
+    : trans(1.0f), inv(1.0f), mat(mat), a(nullptr), b(nullptr) {}
+trm::Sdf::Sdf(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b)
+    : trans(1.0f), inv(1.0f), mat(nullptr), a(a), b(b) {}
+trm::Sdf::Sdf(const std::shared_ptr<Material> &mat,
+              const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b)
+    : trans(1.0f), inv(1.0f), mat(mat), a(a), b(b) {}
 
 Float trm::Sdf::operator()(const Vec3 &p) const {
   return this->dist(Vec3(this->inv * Vec4(p, 1.0f)));

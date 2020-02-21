@@ -1,6 +1,7 @@
 #include "scene.hpp"
 
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -136,6 +137,8 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
     }
   }
 
+  std::map<std::shared_ptr<trm::Sdf>, std::array<std::string, 2>>
+      linked_objects;
   std::map<std::string, std::shared_ptr<trm::Sdf>> object_index;
   if (json.contains("objects")) {
     nlohmann::json::iterator objects = json.find("objects");
@@ -147,26 +150,73 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
               : nullptr;
       std::string type =
           it->contains("type") ? it->at("type").get<std::string>() : "";
-      if (type == "SPHERE") {
+      if (type == "sphere") {
         scene->objects.push_back(
             sdfSphere(getf(it->at("radius")), material_ptr));
-      } else if (type == "BOX") {
+      } else if (type == "box") {
         scene->objects.push_back(
             sdfBox(getf(it->at("dim").at(0)), getf(it->at("dim").at(1)),
                    getf(it->at("dim").at(2)), material_ptr));
-      } else if (type == "CYLINDER") {
+      } else if (type == "cylinder") {
         scene->objects.push_back(sdfCylinder(
             getf(it->at("height")), getf(it->at("radius")), material_ptr));
-      } else if (type == "TORUS") {
+      } else if (type == "torus") {
         scene->objects.push_back(sdfTorus(getf(it->at("radiusRevolve")),
                                           getf(it->at("radius")),
                                           material_ptr));
-      } else if (type == "PLANE") {
+      } else if (type == "plane") {
         scene->objects.push_back(sdfPlane(
             getf(it->at("normal").at(0)), getf(it->at("normal").at(1)),
             getf(it->at("normal").at(2)),
             it->at("normal").size() >= 4 ? getf(it->at("normal").at(3)) : 0.0f,
             material_ptr));
+      } else if (type == "elongate") {
+        scene->objects.push_back(sdfElongate(nullptr,
+                                             Vec3(getf(it->at("scale").at(0)),
+                                                  getf(it->at("scale").at(1)),
+                                                  it->at("scale").at(2)),
+                                             material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("object").get<std::string>(), ""};
+      } else if (type == "round") {
+        scene->objects.push_back(
+            sdfRound(nullptr, getf(it->at("radius")), material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("object").get<std::string>(), ""};
+      } else if (type == "onion") {
+        scene->objects.push_back(
+            sdfOnion(nullptr, getf(it->at("thickness")), material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("object").get<std::string>(), ""};
+      } else if (type == "union") {
+        scene->objects.push_back(sdfUnion(nullptr, nullptr, material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("a").get<std::string>(), it->at("b").get<std::string>()};
+      } else if (type == "subtraction") {
+        scene->objects.push_back(
+            sdfSubtraction(nullptr, nullptr, material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("a").get<std::string>(), it->at("b").get<std::string>()};
+      } else if (type == "intersection") {
+        scene->objects.push_back(
+            sdfIntersection(nullptr, nullptr, material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("a").get<std::string>(), it->at("b").get<std::string>()};
+      } else if (type == "smoothUnion") {
+        scene->objects.push_back(sdfSmoothUnion(
+            nullptr, nullptr, getf(it->at("radius")), material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("a").get<std::string>(), it->at("b").get<std::string>()};
+      } else if (type == "smoothSubtraction") {
+        scene->objects.push_back(sdfSmoothSubtraction(
+            nullptr, nullptr, getf(it->at("radius")), material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("a").get<std::string>(), it->at("b").get<std::string>()};
+      } else if (type == "smoothIntersection") {
+        scene->objects.push_back(sdfSmoothIntersection(
+            nullptr, nullptr, getf(it->at("radius")), material_ptr));
+        linked_objects[scene->objects.back()] = {
+            it->at("a").get<std::string>(), it->at("b").get<std::string>()};
       } else {
         std::fprintf(stderr, "Every object must have a specific type\n");
         return false;
@@ -215,6 +265,13 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
       }
       object_index[it.key()] = scene->objects.back();
     }
+  }
+
+  for (auto &obj : linked_objects) {
+    std::cout << "HI!" << obj.first << object_index[obj.second[0]] << "<<<\n";
+    obj.first->a = object_index[obj.second[0]];
+    if (obj.second[1] != "")
+      obj.first->b = object_index[obj.second[1]];
   }
 
   return true;

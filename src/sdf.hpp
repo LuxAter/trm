@@ -14,6 +14,9 @@ namespace trm {
 struct Sdf : std::enable_shared_from_this<Sdf> {
   Sdf();
   Sdf(const std::shared_ptr<Material> &mat);
+  Sdf(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b = nullptr);
+  Sdf(const std::shared_ptr<Material> &mat, const std::shared_ptr<Sdf> &a,
+      const std::shared_ptr<Sdf> &b = nullptr);
 
   Float operator()(const Vec3 &p) const;
   Vec3 normal(const Vec3 &p,
@@ -27,6 +30,7 @@ struct Sdf : std::enable_shared_from_this<Sdf> {
   Mat4 trans, inv;
 
   std::shared_ptr<Material> mat;
+  std::shared_ptr<trm::Sdf> a, b;
 };
 
 #define SDF_GEN(TYPE)                                                          \
@@ -92,78 +96,73 @@ struct Plane : Sdf {
 
 struct Elongate : Sdf {
   template <typename... Args>
-  Elongate(const Vec3 &h, const std::shared_ptr<Sdf> &a, const Args &... args)
-      : Sdf(args...), h(h), a(a) {}
+  Elongate(const std::shared_ptr<Sdf> &a, const Vec3 &h, const Args &... args)
+      : Sdf(args..., a), h(h) {}
   inline Float dist(const Vec3 &p) const override {
     Vec3 q = abs(p) - h;
-    return (*a)(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
+    return (*this->a)(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
   }
   Vec3 h;
-  std::shared_ptr<Sdf> a;
 };
 struct Round : Sdf {
   template <typename... Args>
   Round(const std::shared_ptr<Sdf> &a, const Float &radius,
         const Args &... args)
-      : Sdf(args...), radius(radius), a(a) {}
-  inline Float dist(const Vec3 &p) const override { return (*a)(p)-radius; }
+      : Sdf(args..., a), radius(radius) {}
+  inline Float dist(const Vec3 &p) const override {
+    return (*this->a)(p)-radius;
+  }
   Float radius;
-  std::shared_ptr<Sdf> a;
 };
 struct Onion : Sdf {
   template <typename... Args>
-  Onion(const Float &thickness, const std::shared_ptr<Sdf> &a,
+  Onion(const std::shared_ptr<Sdf> &a, const Float &thickness,
         const Args &... args)
-      : Sdf(args...), thickness(thickness), a(a) {}
+      : Sdf(args..., a), thickness(thickness) {}
   inline Float dist(const Vec3 &p) const override {
-    return abs((*a)(p)) - thickness;
+    return abs((*this->a)(p)) - thickness;
   }
   Float thickness;
-  std::shared_ptr<Sdf> a;
 };
 
 struct Union : Sdf {
   template <typename... Args>
   Union(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
         const Args &... args)
-      : Sdf(args...), a(a), b(b) {}
+      : Sdf(args..., a, b) {}
   inline Float dist(const Vec3 &p) const override {
-    return min((*a)(p), (*b)(p));
+    return min((*this->a)(p), (*this->b)(p));
   }
-  std::shared_ptr<Sdf> a, b;
 };
 struct Subtraction : Sdf {
   template <typename... Args>
   Subtraction(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
               const Args &... args)
-      : Sdf(args...), a(a), b(b) {}
+      : Sdf(args..., a, b) {}
   inline Float dist(const Vec3 &p) const override {
-    return max(-(*a)(p), (*b)(p));
+    return max(-(*this->a)(p), (*this->b)(p));
   }
-  std::shared_ptr<Sdf> a, b;
 };
 struct Intersection : Sdf {
   template <typename... Args>
   Intersection(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
                const Args &... args)
-      : Sdf(args...), a(a), b(b) {}
+      : Sdf(args..., a, b) {}
   inline Float dist(const Vec3 &p) const override {
-    return max((*a)(p), (*b)(p));
+    return max((*this->a)(p), (*this->b)(p));
   }
-  std::shared_ptr<Sdf> a, b;
 };
 struct SmoothUnion : Sdf {
   template <typename... Args>
   SmoothUnion(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b,
               const Float &radius, const Args &... args)
-      : Sdf(args...), a(a), b(b), radius(radius) {}
+      : Sdf(args..., a, b), radius(radius) {}
   inline Float dist(const Vec3 &p) const override {
-    Float d1 = (*a)(p);
-    Float d2 = (*b)(p);
+    Float d1 = (*this->a)(p);
+    Float d2 = (*this->b)(p);
     Float h = max(radius - abs(d1 - d2), 0.0f);
     return min(d1, d2) - h * h * 0.25 / radius;
   }
-  std::shared_ptr<Sdf> a, b;
   Float radius;
 };
 struct SmoothSubtraction : Sdf {
@@ -171,14 +170,13 @@ struct SmoothSubtraction : Sdf {
   SmoothSubtraction(const std::shared_ptr<Sdf> &a,
                     const std::shared_ptr<Sdf> &b, const Float &radius,
                     const Args &... args)
-      : Sdf(args...), a(a), b(b), radius(radius) {}
+      : Sdf(args..., a, b), radius(radius) {}
   inline Float dist(const Vec3 &p) const override {
-    Float d1 = (*a)(p);
-    Float d2 = (*b)(p);
+    Float d1 = (*this->a)(p);
+    Float d2 = (*this->b)(p);
     Float h = max(radius - abs(-d1 - d2), 0.0f);
     return max(-d1, d2) + h * h * 0.25f / radius;
   }
-  std::shared_ptr<Sdf> a, b;
   Float radius;
 };
 struct SmoothIntersection : Sdf {
@@ -186,14 +184,13 @@ struct SmoothIntersection : Sdf {
   SmoothIntersection(const std::shared_ptr<Sdf> &a,
                      const std::shared_ptr<Sdf> &b, const Float &radius,
                      const Args &... args)
-      : Sdf(args...), a(a), b(b), radius(radius) {}
+      : Sdf(args..., a, b), radius(radius) {}
   inline Float dist(const Vec3 &p) const override {
-    Float d1 = (*a)(p);
-    Float d2 = (*b)(p);
+    Float d1 = (*this->a)(p);
+    Float d2 = (*this->b)(p);
     Float h = max(radius - abs(d1 - d2), 0.0f);
     return max(d1, d2) + h * h * 0.25 / radius;
   }
-  std::shared_ptr<Sdf> a, b;
   Float radius;
 };
 

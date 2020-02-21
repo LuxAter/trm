@@ -99,6 +99,7 @@ namespace argparse {
 
       while (cargs.size() != 0) {
         std::string current = cargs[0];
+        bool matched = false;
         for (auto &arg : args) {
           if (arg.expr[0] != '-')
             continue;
@@ -108,8 +109,10 @@ namespace argparse {
             return false;
           } else if (chars == 2 && cargs[0].size() > 2 && cargs[0][1] != '-') {
             cargs[0] = '-' + cargs[0].substr(chars);
+            matched = true;
             break;
           } else if (chars >= static_cast<int>(cargs[0].size())) {
+            matched = true;
             chars -= cargs[0].size();
             cargs.erase(cargs.begin());
             if (chars == static_cast<int>(cargs[0].size())) {
@@ -118,6 +121,7 @@ namespace argparse {
             break;
           }
         }
+        if(matched == true) continue;
         for (auto &arg : args) {
           if(cargs.size() == 0) break;
           if (arg.expr[0] == '-')
