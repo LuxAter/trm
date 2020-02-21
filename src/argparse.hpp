@@ -10,174 +10,64 @@
 
 namespace trm {
 namespace argparse {
-  bool parse_opt(const std::string &arg, int *value) {
-    return std::sscanf(arg.c_str(), "%d", value) == 1;
-  }
-  bool parse_opt(const std::string &arg, std::size_t *value) {
-    return std::sscanf(arg.c_str(), "%lu", value) == 1;
-  }
-  bool parse_opt(const std::string &arg, float *value) {
-    return std::sscanf(arg.c_str(), "%f", value) == 1;
-  }
-  bool parse_opt(const std::string &arg, double *value) {
-    return std::sscanf(arg.c_str(), "%lf", value) == 1;
-  }
-  bool parse_opt(const std::string &arg, glm::uvec2 *value) {
-    return std::sscanf(arg.c_str(), "%u,%u", &value->x, &value->y) == 2;
-  }
-  bool parse_opt(const std::string &arg, glm::vec2 *value) {
-    return std::sscanf(arg.c_str(), "%f,%f", &value->x, &value->y) == 2;
-  }
-  bool parse_opt(const std::string &arg, glm::uvec3 *value) {
-    return std::sscanf(arg.c_str(), "%u,%u,%u", &value->x, &value->y,
-                       &value->z) == 3;
-  }
-  bool parse_opt(const std::string &arg, glm::vec3 *value) {
-    return std::sscanf(arg.c_str(), "%f,%f,%f", &value->x, &value->y,
-                       &value->z) == 3;
-  }
-  bool parse_opt(const std::string &arg, std::string *value) {
-    char buf[255];
-    int result = std::sscanf(arg.c_str(), "%s", buf);
-    if (result != 1)
-      return false;
-    *value = std::string(buf);
-    return true;
-  }
+  bool opt(const std::string &arg, int *value);
+  bool opt(const std::string &arg, std::size_t *value);
+  bool opt(const std::string &arg, float *value);
+  bool opt(const std::string &arg, double *value);
+  bool opt(const std::string &arg, glm::vec2 *value);
+  bool opt(const std::string &arg, glm::vec3 *value);
+  bool opt(const std::string &arg, glm::uvec2 *value);
+  bool opt(const std::string &arg, glm::uvec3 *value);
+  bool opt(const std::string &arg, std::string *value);
 
   class Parser {
   public:
     class Argument {
     public:
       enum Type { BOOL, INT, UINT, FLOAT, UVEC2, VEC2, UVEC3, VEC3, STRING };
-
-      Argument(const std::string expr, bool *ptr, std::string help)
-          : type(BOOL), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, int *ptr, std::string help)
-          : type(INT), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, std::size_t *ptr, std::string help)
-          : type(INT), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, float *ptr, std::string help)
-          : type(FLOAT), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, glm::uvec2 *ptr, std::string help)
-          : type(UVEC2), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, glm::vec2 *ptr, std::string help)
-          : type(VEC2), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, glm::uvec3 *ptr, std::string help)
-          : type(UVEC3), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, glm::vec3 *ptr, std::string help)
-          : type(VEC3), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
-      Argument(const std::string expr, std::string *ptr, std::string help)
-          : type(STRING), ptr(reinterpret_cast<void *>(ptr)), expr(expr + ','),
-            help(help) {}
+      Argument(const std::string expr, bool *ptr, std::string help);
+      Argument(const std::string expr, int *ptr, std::string help);
+      Argument(const std::string expr, std::size_t *ptr, std::string help);
+      Argument(const std::string expr, float *ptr, std::string help);
+      Argument(const std::string expr, glm::uvec2 *ptr, std::string help);
+      Argument(const std::string expr, glm::uvec3 *ptr, std::string help);
+      Argument(const std::string expr, glm::vec2 *ptr, std::string help);
+      Argument(const std::string expr, glm::vec3 *ptr, std::string help);
+      Argument(const std::string expr, std::string *ptr, std::string help);
 
       inline void print_help(const std::size_t width) const {
         std::printf("  %*s  %s\n", static_cast<int>(width),
-                    expr.substr(0, expr.size() - 1).c_str(), help.c_str());
+                    expr.back() == ',' ? expr.substr(0, expr.size() - 1).c_str()
+                                       : expr.c_str(),
+                    help.c_str());
       }
+
+      int parse_boolean(const std::string &arg);
+      int parse_opt(const std::string &str);
 
       inline int match(const std::string &arg, const std::string &peek) {
         std::size_t prev = 0, pos = 0;
+        if (expr[0] != '-') {
+          if (type == BOOL)
+            return -1;
+          else {
+            return parse_opt(arg);
+          }
+          return 0;
+        }
         while ((pos = expr.find(",", prev)) != std::string::npos) {
           std::string matcher = expr.substr(prev, pos - prev);
           prev = pos + 1;
           if (arg.compare(0, matcher.size(), matcher) == 0) {
             if (type == BOOL) {
-              *reinterpret_cast<bool *>(ptr) = true;
-              return matcher.size();
+              return parse_boolean(matcher);
             } else if (arg.size() > matcher.size() &&
                        arg[matcher.size()] == '=') {
-              switch (type) {
-              case INT:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<int *>(ptr)))
-                  return -1;
-                break;
-              case UINT:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<std::size_t *>(ptr)))
-                  return -1;
-                break;
-              case FLOAT:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<float *>(ptr)))
-                  return -1;
-                break;
-              case UVEC2:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<glm::uvec2 *>(ptr)))
-                  return -1;
-                break;
-              case VEC2:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<glm::vec2 *>(ptr)))
-                  return -1;
-                break;
-              case UVEC3:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<glm::uvec3 *>(ptr)))
-                  return -1;
-                break;
-              case VEC3:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<glm::vec3 *>(ptr)))
-                  return -1;
-                break;
-              case STRING:
-                if (!parse_opt(arg.substr(matcher.size() + 1),
-                               reinterpret_cast<std::string *>(ptr)))
-                  return -1;
-                break;
-              default:
-                return -1;
-              }
-              return arg.size();
+              return parse_opt(arg.substr(matcher.size() + 1)) == -1
+                         ? -1
+                         : arg.size();
             } else {
-              switch (type) {
-              case INT:
-                if (!parse_opt(peek, reinterpret_cast<int *>(ptr)))
-                  return -1;
-                break;
-              case UINT:
-                if (!parse_opt(peek, reinterpret_cast<std::size_t *>(ptr)))
-                  return -1;
-                break;
-              case FLOAT:
-                if (!parse_opt(peek, reinterpret_cast<float *>(ptr)))
-                  return -1;
-                break;
-              case UVEC2:
-                if (!parse_opt(peek, reinterpret_cast<glm::uvec2 *>(ptr)))
-                  return -1;
-                break;
-              case VEC2:
-                if (!parse_opt(peek, reinterpret_cast<glm::vec2 *>(ptr)))
-                  return -1;
-                break;
-              case UVEC3:
-                if (!parse_opt(peek, reinterpret_cast<glm::uvec3 *>(ptr)))
-                  return -1;
-                break;
-              case VEC3:
-                if (!parse_opt(peek, reinterpret_cast<glm::vec3 *>(ptr)))
-                  return -1;
-                break;
-              case STRING:
-                if (!parse_opt(peek, reinterpret_cast<std::string *>(ptr)))
-                  return -1;
-                break;
-              default:
-                return -1;
-              }
-              return arg.size() + peek.size();
+              return arg.size() + parse_opt(peek);
             }
           }
         }
@@ -210,6 +100,28 @@ namespace argparse {
       while (cargs.size() != 0) {
         std::string current = cargs[0];
         for (auto &arg : args) {
+          if (arg.expr[0] != '-')
+            continue;
+          int chars = arg.match(cargs[0], cargs.size() != 1 ? cargs[1] : "");
+          if (chars < 0) {
+            std::fprintf(stderr, "Command line argument error\n");
+            return false;
+          } else if (chars == 2 && cargs[0].size() > 2 && cargs[0][1] != '-') {
+            cargs[0] = '-' + cargs[0].substr(chars);
+            break;
+          } else if (chars >= static_cast<int>(cargs[0].size())) {
+            chars -= cargs[0].size();
+            cargs.erase(cargs.begin());
+            if (chars == static_cast<int>(cargs[0].size())) {
+              cargs.erase(cargs.begin());
+            }
+            break;
+          }
+        }
+        for (auto &arg : args) {
+          if(cargs.size() == 0) break;
+          if (arg.expr[0] == '-')
+            continue;
           int chars = arg.match(cargs[0], cargs.size() != 1 ? cargs[1] : "");
           if (chars < 0) {
             std::fprintf(stderr, "Command line argument error\n");
@@ -236,8 +148,12 @@ namespace argparse {
     }
 
     void help() {
-      std::printf("Usage: %s [OPTIONS]\n", exec.c_str());
-      std::printf("%s\n\n", desc.c_str());
+      std::printf("Usage: %s [OPTIONS]", exec.c_str());
+      for(auto& arg : args) {
+        if(arg.expr[0] == '-') continue;
+        std::printf(" [%s]", arg.expr.substr(0, arg.expr.size() - 1).c_str());
+      }
+      std::printf("\n%s\n\n", desc.c_str());
 
       std::size_t max_width = 0;
       for (auto &arg : args) {

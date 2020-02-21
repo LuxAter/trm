@@ -1,3 +1,6 @@
+#ifndef TRM_SDF_HPP_
+#define TRM_SDF_HPP_
+
 #include "type.hpp"
 
 #include <limits>
@@ -5,113 +8,23 @@
 #include <memory>
 
 #include "interp.hpp"
-
-struct Material;
+#include "material.hpp"
 
 namespace trm {
 struct Sdf : std::enable_shared_from_this<Sdf> {
   Sdf();
   Sdf(const std::shared_ptr<Material> &mat);
-  template <typename... Args>
-  Sdf(const Args &... args) : trans(1.0f), inv(1.0f), mat(nullptr) {
-    __insert(args...);
-  }
-  template <typename... Args>
-  Sdf(const std::shared_ptr<Material> &mat, const Args &... args)
-      : trans(1.0f), inv(1.0f), mat(mat) {
-    __insert(args...);
-  }
-
-  void __insert(const std::string &key, const Float &val) {
-    varf[key] = Interpolation<Float, Float>(val, interp::hermite<Float, Float>);
-  }
-  void __insert(const std::string &key, const Vec2 &val) {
-    varf2[key] = Interpolation<Float, Vec2>(val, interp::hermite<Float, Vec2>);
-  }
-  void __insert(const std::string &key, const Vec3 &val) {
-    varf3[key] = Interpolation<Float, Vec3>(val, interp::hermite<Float, Vec3>);
-  }
-  void __insert(const std::string &key, const Vec4 &val) {
-    varf4[key] = Interpolation<Float, Vec4>(val, interp::hermite<Float, Vec4>);
-  }
-  void __insert(const std::string &key, const std::shared_ptr<Sdf> &val) {
-    children[key] = val;
-  }
-  template <typename... Args>
-  void __insert(std::string &key, const Float &val, const Args &... args) {
-    varf[key] = Interpolation<Float, Float>(val, interp::hermite<Float, Float>);
-    __insert(args...);
-  }
-  template <typename... Args>
-  void __insert(std::string &key, const Vec2 &val, const Args &... args) {
-    varf2[key] = Interpolation<Float, Vec2>(val, interp::hermite<Float, Vec2>);
-    __insert(args...);
-  }
-  template <typename... Args>
-  void __insert(std::string &key, const Vec3 &val, const Args &... args) {
-    varf3[key] = Interpolation<Float, Vec3>(val, interp::hermite<Float, Vec3>);
-    __insert(args...);
-  }
-  template <typename... Args>
-  void __insert(std::string &key, const Vec4 &val, const Args &... args) {
-    varf4[key] = Interpolation<Float, Vec4>(val, interp::hermite<Float, Vec4>);
-    __insert(args...);
-  }
-  template <typename... Args>
-  void __insert(const std::string &key, const std::shared_ptr<Sdf> &val,
-                const Args &... args) {
-    children[key] = val;
-    __insert(args...);
-  }
-
-  void construct(const Float &t);
 
   Float operator()(const Vec3 &p) const;
   Vec3 normal(const Vec3 &p,
               const Float &ep = 10 * std::numeric_limits<Float>::epsilon());
-  std::shared_ptr<Sdf> translate(const Float &t, const Vec3 &xyz);
-  std::shared_ptr<Sdf> rotate(const Float &t, const Float &angle,
-                              const Vec3 &axis);
-  std::shared_ptr<Sdf> scale(const Float &t, const Vec3 &xyz);
+  std::shared_ptr<Sdf> translate(const Vec3 &xyz);
+  std::shared_ptr<Sdf> rotate(const Float &angle, const Vec3 &axis);
+  std::shared_ptr<Sdf> scale(const Vec3 &xyz);
 
   inline virtual Float dist(const Vec3 &) const = 0;
-  inline void clear() {
-    for (auto &var : varf) {
-      var.second.clear();
-    }
-    for (auto &var : varf2) {
-      var.second.clear();
-    }
-    for (auto &var : varf3) {
-      var.second.clear();
-    }
-    for (auto &var : varf4) {
-      var.second.clear();
-    }
-    for (auto &child : children) {
-      child.second->clear();
-    }
-  }
 
   Mat4 trans, inv;
-
-  Interpolation<Float, Vec3> translation =
-      Interpolation<Float, Vec3>(interp::hermite<Float, Vec3>);
-  Interpolation<Float, Vec3> scaling =
-      Interpolation<Float, Vec3>(interp::hermite<Float, Vec3>);
-  Interpolation<Float, Quat> rotation =
-      Interpolation<Float, Quat>(interp::squad<Float>);
-
-  std::map<std::string, Float> instantf;
-  std::map<std::string, Vec2> instantf2;
-  std::map<std::string, Vec3> instantf3;
-  std::map<std::string, Vec4> instantf4;
-  std::map<std::string, Interpolation<Float, Float>> varf;
-  std::map<std::string, Interpolation<Float, Vec2>> varf2;
-  std::map<std::string, Interpolation<Float, Vec3>> varf3;
-  std::map<std::string, Interpolation<Float, Vec4>> varf4;
-
-  std::map<std::string, std::shared_ptr<Sdf>> children;
 
   std::shared_ptr<Material> mat;
 };
@@ -125,9 +38,9 @@ struct Sdf : std::enable_shared_from_this<Sdf> {
 struct Sphere : Sdf {
   template <typename... Args>
   Sphere(const Float &radius, const Args &... args)
-      : Sdf(args..., "radius", radius), radius(this->instantf["radius"]) {}
+      : Sdf(args...), radius(radius) {}
   inline Float dist(const Vec3 &p) const override { return length(p) - radius; }
-  Float &radius;
+  Float radius;
 };
 struct Box : Sdf {
   template <typename... Args>
@@ -303,3 +216,5 @@ SDF_GEN(SmoothSubtraction);
 SDF_GEN(SmoothIntersection);
 
 } // namespace trm
+
+#endif // TRM_SDF_HPP_

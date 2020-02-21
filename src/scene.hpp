@@ -1,37 +1,22 @@
 #ifndef TRM_SCENE_HPP_
 #define TRM_SCENE_HPP_
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "camera.hpp"
+#include "material.hpp"
+#include "sdf.hpp"
+#include "settings.hpp"
 
-using namespace glm;
-#ifdef DOUBLE_PERC
-typedef glm::dvec2 Vec2;
-typedef glm::dvec3 Vec3;
-typedef glm::dvec4 Vec4;
-typedef glm::dmat4 Mat4;
-typedef double Float;
-#else
-typedef glm::vec2 Vec2;
-typedef glm::vec3 Vec3;
-typedef glm::vec4 Vec4;
-typedef glm::mat4 Mat4;
-typedef float Float;
-#endif
-
+namespace trm {
 struct Scene {
-  Float maximum_distance = 1e3;
-  Float epsilon_distance = 1e-3;
-  Float fov = M_PI / 2.0f;
-  uvec2 resolution = uvec2(500, 500);
-  std::size_t maxium_depth = 16;
-  std::size_t spp = 16;
-  std::vector<std::shared_ptr<Sdf>> objects;
-  std::vector<std::shared_ptr<Mat>> materials;
-  Vec3 camera_pos, camera_center, camera_up;
+  std::vector<std::shared_ptr<trm::Material>> materials;
+  std::vector<std::shared_ptr<trm::Sdf>> objects;
+  trm::Camera camera;
 };
+
+bool load_json(const std::string &file, RenderSettings *settings, Scene *scene);
+} // namespace trm
 
 #endif // TRM_SCENE_HPP_

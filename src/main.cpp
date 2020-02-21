@@ -26,47 +26,31 @@
 #include "camera.hpp"
 #include "img.hpp"
 #include "interp.hpp"
+#include "material.hpp"
 #include "prof.hpp"
+#include "rand.hpp"
+#include "scene.hpp"
 #include "sdf.hpp"
+#include "settings.hpp"
 #include "type.hpp"
 
 // PROF_STREAM_FILE("prof.json");
 
 using namespace glm;
 
-struct Material;
-
 // Ray structure
 struct Ray {
   Ray(const Vec3 &o, const Vec3 &d) : o(o), d(normalize(d)), medium(nullptr) {}
-  Ray(const Vec3 &o, const Vec3 &d, const std::shared_ptr<Material> &medium)
+  Ray(const Vec3 &o, const Vec3 &d,
+      const std::shared_ptr<trm::Material> &medium)
       : o(o), d(normalize(d)), medium(medium) {}
   Vec3 o, d;
-  std::shared_ptr<Material> medium;
+  std::shared_ptr<trm::Material> medium;
 };
 
 // Global Variables set from main
-static Float maximum_distance = 1e3;
-static Float epsilon_distance = 1e-3;
-static Float fov = M_PI / 2.0f;
-static uvec2 resolution = uvec2(500, 500);
-static std::size_t maximum_depth = 16;
-static std::size_t spp = 4;
-static std::vector<std::shared_ptr<trm::Sdf>> objects;
-static trm::Camera camera;
-static bool no_bar = false;
-
-static Float inter_pixel_arc = 0.0f;
-
-// Random number generator
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_int_distribution<int> idist(0, std::numeric_limits<int>::max());
-std::uniform_real_distribution<Float> dist(0.0f, 1.0f);
-std::uniform_real_distribution<Float> dist2(-1.0f, 1.0f);
-inline int irand() { return idist(gen); }
-inline Float frand() { return dist(gen); }
-inline Float frand2() { return dist2(gen); }
+static trm::RenderSettings settings;
+static trm::Scene scene;
 
 void ons(const Vec3 &v1, Vec3 &v2, Vec3 &v3) {
   if (abs(v1.x) > abs(v1.y)) {
@@ -79,30 +63,6 @@ void ons(const Vec3 &v1, Vec3 &v2, Vec3 &v3) {
   v3 = cross(v1, v2);
 }
 
-struct Material {
-  enum Shading { EMIS, DIFF, SPEC, REFR };
-  Material(const Shading &type, const Vec3 &color, const Float &emission,
-           const Float &ior)
-      : type(type), color(color), emission(emission), ior(ior) {}
-  Shading type;
-  Vec3 color;
-  Float emission, ior;
-};
-inline std::shared_ptr<Material> matEmis(const Float &emission,
-                                         const Vec3 &color = Vec3(1.0)) {
-  return std::make_shared<Material>(Material::EMIS, color, emission, 0.0);
-}
-inline std::shared_ptr<Material> matDiff(const Vec3 &color = Vec3(1.0)) {
-  return std::make_shared<Material>(Material::DIFF, color, 0.0, 0.0);
-}
-inline std::shared_ptr<Material> matSpec(const Vec3 &color = Vec3(1.0)) {
-  return std::make_shared<Material>(Material::SPEC, color, 0.0, 0.0);
-}
-inline std::shared_ptr<Material> matRefr(const Float &ior,
-                                         const Vec3 &color = Vec3(1.0)) {
-  return std::make_shared<Material>(Material::REFR, color, 0.0, ior);
-}
-
 Vec3 hemisphere(const Float &u1, const Float &u2) {
   const Float r = sqrt(1.0 - u1 * u1);
   const Float phi = 2 * M_PI * u2;
@@ -112,7 +72,7 @@ Vec3 hemisphere(const Float &u1, const Float &u2) {
 std::tuple<Float, std::shared_ptr<trm::Sdf>> sdfScene(const Vec3 &p) {
   Float dist = std::numeric_limits<Float>::infinity();
   std::shared_ptr<trm::Sdf> closest_obj = nullptr;
-  for (auto &obj : objects) {
+  for (auto &obj : scene.objects) {
     if (obj->mat == nullptr)
       continue;
     Float obj_dist = abs((*obj)(p));
@@ -130,13 +90,14 @@ std::tuple<Float, std::shared_ptr<trm::Sdf>> rayMarch(const Ray &r,
   Float delta_dist = 0.0;
   bool not_safe = false;
   std::shared_ptr<trm::Sdf> obj = nullptr;
-  for (dist = 0.0; dist < maximum_distance; dist += delta_dist) {
+  for (dist = 0.0; dist < settings.maximum_distance; dist += delta_dist) {
     std::tie(delta_dist, obj) = sdfScene(r.o + dist * r.d);
-    if (!not_safe && safe_depth != nullptr && delta_dist < inter_pixel_arc) {
+    if (!not_safe && safe_depth != nullptr &&
+        delta_dist < settings.inter_pixel_arc) {
       *safe_depth = dist;
       not_safe = true;
     }
-    if (delta_dist < epsilon_distance) {
+    if (delta_dist < settings.epsilon_distance) {
       return std::make_tuple(dist, obj);
     }
   }
@@ -146,9 +107,9 @@ std::tuple<Float, std::shared_ptr<trm::Sdf>> rayMarch(const Ray &r,
 Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
   Float rr_factor = 1.0;
   Vec3 color(0.0f);
-  if (depth >= maximum_depth) {
+  if (depth >= settings.maximum_depth) {
     const Float rr_stop_prop = 0.1;
-    if (frand() <= rr_stop_prop) {
+    if (trm::frand() <= rr_stop_prop) {
       return color;
     }
     rr_factor = 1.0 / (1.0 - rr_stop_prop);
@@ -165,31 +126,31 @@ Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
   const Float emission = obj->mat->emission;
   color = emission * obj->mat->color * rr_factor;
 
-  if (obj->mat->type == Material::DIFF) {
+  if (obj->mat->type == trm::Material::DIFF) {
     Vec3 rotx, roty;
     ons(n, rotx, roty);
-    Vec3 sampled_dir = hemisphere(frand(), frand());
+    Vec3 sampled_dir = hemisphere(trm::frand(), trm::frand());
     Vec3 rotated_dir;
     rotated_dir.x = dot(Vec3(rotx.x, roty.x, n.x), sampled_dir);
     rotated_dir.y = dot(Vec3(rotx.y, roty.y, n.y), sampled_dir);
     rotated_dir.z = dot(Vec3(rotx.z, roty.z, n.z), sampled_dir);
     Float cost = dot(rotated_dir, n);
-    color += trace({hp + (10.0f * epsilon_distance * rotated_dir), rotated_dir,
-                    r.medium},
+    color += trace({hp + (10.0f * settings.epsilon_distance * rotated_dir),
+                    rotated_dir, r.medium},
                    nullptr, depth + 1) *
              obj->mat->color * cost * rr_factor * 0.25f; // Should be 0.1f
-  } else if (obj->mat->type == Material::SPEC) {
+  } else if (obj->mat->type == trm::Material::SPEC) {
     Vec3 new_dir = normalize(reflect(r.d, n));
-    color +=
-        trace({hp + (10.0f * epsilon_distance * new_dir), new_dir, r.medium},
-              nullptr, depth + 1) *
-        rr_factor;
-  } else if (obj->mat->type == Material::REFR) {
+    color += trace({hp + (10.0f * settings.epsilon_distance * new_dir), new_dir,
+                    r.medium},
+                   nullptr, depth + 1) *
+             rr_factor;
+  } else if (obj->mat->type == trm::Material::REFR) {
     Vec3 new_dir =
         refract(r.d, (r.medium == obj->mat) ? -n : n,
                 (r.medium != nullptr) ? (r.medium->ior / obj->mat->ior)
                                       : (1.0f / obj->mat->ior));
-    color += trace({hp + (10.0f * epsilon_distance * new_dir), new_dir,
+    color += trace({hp + (10.0f * settings.epsilon_distance * new_dir), new_dir,
                     (r.medium != nullptr && r.medium == obj->mat) ? nullptr
                                                                   : obj->mat},
                    nullptr, depth + 1) *
@@ -198,37 +159,34 @@ Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
   return color;
 }
 
-void render(const std::size_t &frame, const Float &t_start,
-            const Float t_delta) {
+void render(const std::size_t &frame, const Float &t_start) {
   PROF_FUNC("renderer");
-#ifdef _OPENMP
-  std::printf("THREADS: %d\n", omp_get_max_threads());
-#endif
-  ProgressBar bar(resolution.y * resolution.x,
-                  fmt::format("Frame: {:5d} @ {:7.3f}", frame, t_start),
-                  !no_bar);
+  ProgressBar bar(settings.resolution.y * settings.resolution.x, "",
+                  !settings.no_bar);
   bar.unit_scale = true;
   bar.unit = "px";
-  uint8_t *buffer =
-      (uint8_t *)malloc(sizeof(uint8_t) * 3 * resolution.x * resolution.y);
+  uint8_t *buffer = (uint8_t *)malloc(
+      sizeof(uint8_t) * 3 * settings.resolution.x * settings.resolution.y);
 
-  // Mat4 view = inverse(lookAtLH(camera.pos, camera.center, camera.up));
-  Mat4 view(1.0f);
-  Float filmz = resolution.x / (2.0f * tan(fov / 2.0f));
+  Mat4 view =
+      inverse(lookAtLH(scene.camera.pos, scene.camera.center, scene.camera.up));
+  Float filmz = settings.resolution.x / (2.0f * tan(scene.camera.fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-  inter_pixel_arc = sqrt(2.0f) / filmz;
+  settings.inter_pixel_arc = sqrt(2.0f) / filmz;
 #pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
-  for (std::size_t i = 0; i < resolution.x * resolution.y; ++i) {
+  for (std::size_t i = 0; i < settings.resolution.x * settings.resolution.y;
+       ++i) {
     PROF_SCOPED("pixel", "renderer");
-    std::size_t x = i % resolution.x;
-    std::size_t y = i / resolution.x;
+    std::size_t x = i % settings.resolution.x;
+    std::size_t y = i / settings.resolution.x;
     vec3 color(0.0f, 0.0f, 0.0f);
     Float safe_depth = 0.0f;
-    for (std::size_t s = 0; s < spp; ++s) {
+    for (std::size_t s = 0; s < settings.spp; ++s) {
       Ray ray(origin,
-              view * Vec4(x - resolution.x / 2.0f + frand(),
-                          y - resolution.y / 2.0f + frand(), filmz, 0.0f));
-      color += trace(ray, &safe_depth) / Float(spp);
+              view * Vec4(x - settings.resolution.x / 2.0f + trm::frand(),
+                          y - settings.resolution.y / 2.0f + trm::frand(),
+                          filmz, 0.0f));
+      color += trace(ray, &safe_depth) / Float(settings.spp);
     }
     buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
     buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
@@ -237,81 +195,96 @@ void render(const std::size_t &frame, const Float &t_start,
     if (i % 128 == 0)
       bar.update(128);
   }
-  write_file(fmt::format("{frame:05d}.png", fmt::arg("frame", frame),
+  write_file(fmt::format(settings.output_fmt, fmt::arg("frame", frame),
                          fmt::arg("time", t_start)),
-             resolution, buffer);
+             settings.resolution, buffer);
   if (buffer != nullptr)
     free(buffer);
   bar.finish();
 }
 
 int main(int argc, char *argv[]) {
-  PROF_BEGIN("cxxopts", "main", "argc", argc, "argv",
+  PROF_BEGIN("argparse", "main", "argc", argc, "argv",
              std::vector<std::string>(argv + 1, argv + argc));
 
-  Float t_begin = 0.0f, t_end = 1.0f, t_delta = 0.1f, shutter = 1.0f / 60.0f;
-  std::string output_fmt = "{frame:010}.png";
   bool show_help = false;
+  std::string json_file = "";
 
   trm::argparse::Parser parser("Tiny Ray Marcher");
   parser.add("-h,--help", "show this help message", &show_help);
-  parser.add("-o,--output", "output file path", &output_fmt);
-  parser.add("-s,--spp", &spp, "samples per pixel");
-  parser.add("--fov", &fov, "field of view");
-  parser.add("--max", &maximum_distance, "maximum distance for rays to travel");
-  parser.add("--min", &epsilon_distance,
+  parser.add("-o,--output", "output file path", &settings.output_fmt);
+  parser.add("-s,--spp", &settings.spp, "samples per pixel");
+  parser.add("--fov", &scene.camera.fov, "field of view");
+  parser.add("--max", &settings.maximum_distance,
+             "maximum distance for rays to travel");
+  parser.add("--min", &settings.epsilon_distance,
              "distance to consider as an intersection");
-  parser.add("--depth", &maximum_depth,
+  parser.add("--depth", &settings.maximum_depth,
              "number of reflections/refractions to compute");
-  parser.add("-B,--no-bar", &no_bar, "display fancy progress bar");
-  parser.add("-r,--res,--resolution", &resolution,
+  parser.add("-B,--no-bar", &settings.no_bar, "display fancy progress bar");
+  parser.add("-r,--res,--resolution", &settings.resolution,
              "resolution of output image");
-  parser.add("-b,--begin", &t_begin, "starting time for render");
-  parser.add("-e,--end", &t_end, "ending time for render");
-  parser.add("-d,--delta", &t_delta, "time step between each frame");
-  parser.add("--shutter", &shutter,
-             "time for the camera shutter to remain open");
+  parser.add("SceneJSON", &json_file, "scene specification json");
 
   parser.parse(argc, argv);
 
   if (show_help) {
     parser.help();
     return 0;
+  } else if (json_file == "") {
+    parser.help();
+    std::fprintf(stderr, "ERROR: SceneJson file is required\n");
+    return 1;
   }
-
-  camera.pos.values.front().second = Vec3(0.0f, 0.0f, 0.1f);
-  camera.center.values.front().second = Vec3(0.0f, -4.0f, 5.0f);
-  camera.pos.insert(1.0f, Vec3(0.0f, 0.0f, 9.9f));
-
-  objects.push_back(
-      trm::sdfPlane(0.0, 1.0, 0.0, -5.0, matDiff({1.0, 1.0, 1.0})));
-  objects.push_back(
-      trm::sdfPlane(0.0, -1.0, 0.0, -1.0, matEmis(10.0, {1.0, 1.0, 1.0})));
-  objects.push_back(
-      trm::sdfPlane(-1.0, 0.0, 0.0, -10.0, matDiff({1.0, 0.2, 0.2})));
-  objects.push_back(
-      trm::sdfPlane(1.0, 0.0, 0.0, -10.0, matDiff({0.2, 1.0, 0.2})));
-  objects.push_back(
-      trm::sdfPlane(0.0, 0.0, -1.0, -20.0, matDiff({0.2, 0.2, 1.0})));
-  objects.push_back(
-      trm::sdfPlane(0.0, 0.0, 1.0, 0.0, matDiff({1.0, 1.0, 1.0})));
+  PROF_END();
+  PROF_BEGIN("loadScene", "main");
+  if (!trm::load_json(json_file, &settings, &scene)) {
+    parser.help();
+    std::fprintf(stderr, "ERROR: SceneJson file \"%s\" did not exist\n",
+                 json_file.c_str());
+    return 1;
+  }
 
   PROF_END();
-  PROF_BEGIN("scene", "main");
-
-  // Interpolation<Float, Vec3> interp(hermite<Float, Vec3>);
-  // interp.insert(-1.0, Vec3(-9.9f, 0.0f, 10.0f));
-  // interp.insert(0.0, Vec3(0.0f, 0.0f, 0.1f));
-  // interp.insert(1.0, Vec3(9.9f, 0.0f, 10.0f));
-  // interp.insert(2.0, Vec3(0.0f, 0.0f, 19.9f));
-  // interp.insert(3.0, Vec3(-9.9f, 0.0f, 10.0f));
-  // interp.insert(4.0, Vec3(0.0f, 0.0f, 0.1f));
-  // interp.insert(5.0, Vec3(9.9f, 0.0f, 10.0f));
-  std::size_t frame = 0;
-  for (Float i = camera.begin(1); i <= camera.end(-1); i += 0.01) {
-    render(frame, i, 1 / 60.0);
-    frame++;
+  PROF_BEGIN("defaultArg", "main");
+  if (scene.camera.fov == 0) {
+    scene.camera.fov = M_PI / 2.0f;
   }
+  if (settings.resolution.x == 0 || settings.resolution.y == 0) {
+    settings.resolution = uvec2(500);
+  }
+  if (settings.maximum_depth == 0) {
+    settings.maximum_depth = 16;
+  }
+  if (settings.spp == 0) {
+    settings.spp = 32;
+  }
+  if (settings.output_fmt == "") {
+    settings.output_fmt = "out/{frame:03}.png";
+  }
+  PROF_END();
+
+  PROF_BEGIN("scene", "main");
+  std::printf("Scene JSON: \"%s\"\n", json_file.c_str());
+  std::printf("Settings:\n");
+  std::printf("  Resolution:    %ux%u\n", settings.resolution.x,
+              settings.resolution.y);
+  std::printf("  SPP:           %lu\n", settings.spp);
+  std::printf("  Depth:         %lu\n", settings.maximum_depth);
+  std::printf("  Output Format: \"%s\"\n", settings.output_fmt.c_str());
+  std::printf("Scene:\n");
+  std::printf("  Camera:\n");
+  std::printf("    FOV:      %f\n", scene.camera.fov);
+  std::printf("    Position: %f, %f, %f\n", scene.camera.pos.x,
+              scene.camera.pos.y, scene.camera.pos.z);
+  std::printf("    Center:   %f, %f, %f\n", scene.camera.center.x,
+              scene.camera.center.y, scene.camera.center.z);
+  std::printf("    Up :      %f, %f, %f\n", scene.camera.up.x,
+              scene.camera.up.y, scene.camera.up.z);
+  std::printf("  Objects:   %lu\n", scene.objects.size());
+  std::printf("  Materials: %lu\n", scene.materials.size());
+  render(0, 0.0f);
+  PROF_END();
 
   return 0;
 }

@@ -98,15 +98,23 @@ endmacro()
 # ##############################################################################
 load_submodule(glm)
 load_submodule(fmt)
+load_submodule(json)
 
 # ##############################################################################
 # EXECUTABLE
 # ##############################################################################
-set(SOURCES src/main.cpp src/bar.cpp src/img.cpp src/prof.cpp src/sdf.cpp)
+set(SOURCES
+    src/main.cpp
+    src/bar.cpp
+    src/img.cpp
+    src/prof.cpp
+    src/sdf.cpp
+    src/argparse.cpp
+    src/scene.cpp)
 add_executable(trm ${SOURCES})
 set_target_properties(
   trm PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS OFF)
-target_link_libraries(trm glm::glm fmt::fmt)
+target_link_libraries(trm glm::glm fmt::fmt nlohmann_json::nlohmann_json)
 
 # ##############################################################################
 # THREAD COMPUTE
