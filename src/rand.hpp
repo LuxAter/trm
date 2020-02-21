@@ -14,6 +14,9 @@ static std::uniform_real_distribution<Float> dist2(-1.0f, 1.0f);
 inline int irand() { return idist(gen); }
 inline Float frand() { return dist(gen); }
 inline Float frand2() { return dist2(gen); }
+inline Float frand(const Float &min, const Float &max) {
+  return dist(gen) * (max - min) + min;
+}
 } // namespace trm
 
 #endif // TRM_RAND_HPP_

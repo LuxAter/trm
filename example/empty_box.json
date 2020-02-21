@@ -1,13 +1,11 @@
 {
   "spp": 32,
-  "resolution": [500, 500],
-  "time": [0.0, 4.0],
-  "timeStep": 0.1,
+  "resolution": [250, 250],
   "camera": {
     "fov": 1.5707,
-    "center": [0.0, -5.0, 5.0],
+    "center": [0.0, 0.0, 0.0],
     "up": [0.0, 1.0, 0.0],
-    "pos": [0.0, 0.0, 0.1]
+    "pos": [0.0, 0.0, -10]
   },
   "materials": {
     "white": {
@@ -30,38 +28,53 @@
       "shading": "EMISSIVE",
       "color": [1.0, 1.0, 1.0],
       "emission": 10.0
+    },
+    "glass": {
+      "shading": "REFRACTIVE",
+      "ior": 1.5
+    },
+    "mirror": {
+      "shading": "SPECULAR"
     }
   },
   "objects": {
     "floor": {
       "type": "PLANE",
-      "normal": [0.0, 1.0, 0.0, -5.0],
+      "normal": [0.0, 1.0, 0.0, -5],
       "material": "white"
     },
     "ceil": {
       "type": "PLANE",
-      "normal": [0.0, -1.0, 0.0, -1.0],
+      "normal": [0.0, -1.0, 0.0, -15],
       "material": "light"
     },
     "left": {
       "type": "PLANE",
-      "normal": [-1.0, 0.0, 0.0, -10.0],
+      "normal": [-1.0, 0.0, 0.0, -15],
       "material": "red"
     },
     "right": {
       "type": "PLANE",
-      "normal": [1.0, 0.0, 0.0, -10.0],
+      "normal": [1.0, 0.0, 0.0, -15],
       "material": "green"
     },
     "back": {
       "type": "PLANE",
-      "normal": [0.0, 0.0, -1.0, -20.0],
+      "normal": [0.0, 0.0, -1.0, -15],
       "material": "blue"
     },
     "front": {
       "type": "PLANE",
-      "normal": [0.0, 0.0, 1.0, 0.0],
+      "normal": [0.0, 0.0, 1.0, -15],
       "material": "white"
+    },
+    "focus": {
+      "type": "TORUS",
+      "radius": 1.0,
+      "radiusRevolve": 2.0,
+      "material": "glass",
+      "position": [0.0, 0.0, 0.0],
+      "rotation": ["rand(-1.57,0)", "0.0", "rand(-1.57,1.57)"]
     }
   }
 }

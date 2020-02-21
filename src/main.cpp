@@ -240,8 +240,6 @@ int main(int argc, char *argv[]) {
   PROF_BEGIN("loadScene", "main");
   if (!trm::load_json(json_file, &settings, &scene)) {
     parser.help();
-    std::fprintf(stderr, "ERROR: SceneJson file \"%s\" did not exist\n",
-                 json_file.c_str());
     return 1;
   }
 
@@ -265,7 +263,12 @@ int main(int argc, char *argv[]) {
   PROF_END();
 
   PROF_BEGIN("scene", "main");
-  std::printf("Scene JSON: \"%s\"\n", json_file.c_str());
+  std::printf("Scene JSON:     \"%s\"\n", json_file.c_str());
+#ifdef _OPENMP
+  std::printf("OpenMP Threads: %i\n", omp_get_max_threads()); 
+#else
+  std::printf("OpenMP:         DISABLED\n");
+#endif
   std::printf("Settings:\n");
   std::printf("  Resolution:    %ux%u\n", settings.resolution.x,
               settings.resolution.y);
