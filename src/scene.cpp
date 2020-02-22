@@ -111,13 +111,13 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
       Vec3 color(1.0f);
       if (it->contains("shading")) {
         std::string key = it->at("shading").get<std::string>();
-        if (key == "DIFFUSE")
+        if (key == "diffuse")
           shading = trm::Material::DIFF;
-        else if (key == "SPECULAR")
+        else if (key == "specular")
           shading = trm::Material::SPEC;
-        else if (key == "REFRACTIVE")
+        else if (key == "refractive")
           shading = trm::Material::REFR;
-        else if (key == "EMISSIVE")
+        else if (key == "emissive")
           shading = trm::Material::EMIS;
       }
       if (it->contains("emission")) {
