@@ -159,15 +159,8 @@ Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
   return color;
 }
 
-void render() {
+void render(const std::string &file_path) {
   PROF_FUNC("renderer");
-  std::size_t frame = 0;
-  std::string file_path =
-      fmt::format(settings.output_fmt, fmt::arg("frame", frame));
-  while (file_exists(file_path)) {
-    frame++;
-    file_path = fmt::format(settings.output_fmt, fmt::arg("frame", frame));
-  }
   ProgressBar bar(settings.resolution.y * settings.resolution.x, file_path,
                   !settings.no_bar);
   bar.unit_scale = true;
@@ -291,7 +284,10 @@ int main(int argc, char *argv[]) {
               scene.camera.up.y, scene.camera.up.z);
   std::printf("  Objects:   %lu\n", scene.objects.size());
   std::printf("  Materials: %lu\n", scene.materials.size());
-  render();
+  render("out/" +
+         json_file.substr(json_file.rfind('/') + 1,
+                          json_file.rfind('.') - json_file.rfind('/') - 1) +
+         ".png");
   PROF_END();
 
   return 0;

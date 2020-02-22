@@ -2,7 +2,9 @@
 
 import json
 import random
+from copy import deepcopy
 import numpy as np
+from argparse import ArgumentParser
 
 COLORS = {
     "White": "#FFFFFF",
@@ -24,68 +26,63 @@ COLORS = {
     "DeepOrange": "#FF5722",
     "Brown": "#795548"
 }
-PRIMATIVES = {
-    "sphere": {
-        "type": "sphere",
-        "radius": "float"
-    },
-    "box": {
-        "type": "box",
-        "dim": ["float", "float", "float"]
-    },
-    "cylinder": {
-        "type": "cylinder",
-        "height": "float",
-        "radius": "float"
-    },
-    "torus": {
-        "type": "torus",
-        "radiusRevolve": "float",
-        "radius": "float"
-    }
+
+
+def gen_sphere():
+    return {'type': 'sphere', 'radius': 2.0 * random.random()}
+
+
+def gen_box():
+    return {'type': 'box', 'dim': [2.0 * random.random(), 2.0 * random.random(), 2.0 * random.random()]}
+
+
+def gen_cylinder():
+    return {'type': 'cylinder', 'height': 2.0 * random.random(), 'radius': 1.0 * random.random()}
+
+
+def gen_torus():
+    return {'type': 'torus', 'radiusRevolve': 2.0 * random.random() + 1.0, 'radius': 1.0 * random.random()}
+
+
+PRIMITIVES = {
+    "sphere": gen_sphere,
+    "box": gen_box,
+    "cylinder": gen_cylinder,
+    "torus": gen_torus,
 }
+
+
+def gen_union(a, b):
+    return {'type': 'union', 'a': a, 'b': b}
+
+
+def gen_subtraction(a, b):
+    return {'type': 'subtraction', 'a': a, 'b': b}
+
+
+def gen_intersection(a, b):
+    return {'type': 'intersection', 'a': a, 'b': b}
+
+
+def gen_smooth_union(a, b):
+    return {'type': 'smoothUnion', 'a': a, 'b': b, 'radius': 0.5 * random.random() + 0.2}
+
+
+def gen_smooth_subtraction(a, b):
+    return {'type': 'smoothSubtraction', 'a': a, 'b': b, 'radius': 0.5 * random.random() + 0.2}
+
+
+def gen_smooth_intersection(a, b):
+    return {'type': 'smoothIntersection', 'a': a, 'b': b, 'radius': 0.5 * random.random() + 0.2}
+
+
 OPERATIONS = {
-    "elongate": {
-        "scale": ["float", "float", "float"],
-        "object": "obj"
-    },
-    "round": {
-        "radius": "float",
-        "object": "obj"
-    },
-    "onion": {
-        "thickness": "float",
-        "object": "obj"
-    }
-}
-BOOLEAN = {
-    "union": {
-        "a": "obj",
-        "b": "obj"
-    },
-    "subtraction": {
-        "a": "obj",
-        "b": "obj"
-    },
-    "intersection": {
-        "a": "obj",
-        "b": "obj"
-    },
-    "smoothUnion": {
-        "radius": "float",
-        "a": "obj",
-        "b": "obj"
-    },
-    "smoothSubtraction": {
-        "radius": "float",
-        "a": "obj",
-        "b": "obj"
-    },
-    "smoothIntersection": {
-        "radius": "float",
-        "a": "obj",
-        "b": "obj"
-    },
+    "union": gen_union,
+    "subtraction": gen_subtraction,
+    "intersection": gen_intersection,
+    "smoothUnion": gen_smooth_union,
+    "smoothSubtraction": gen_smooth_subtraction,
+    "smoothIntersection": gen_smooth_intersection
 }
 CORE = {
     "spp": 32,
@@ -94,7 +91,7 @@ CORE = {
         "fov": 1.5707,
         "center": [0.0, 0.0, 0.0],
         "up": [0.0, 1.0, 0.0],
-        "pos": [0.0, 0.0, -10.0]
+        "pos": [0.0, 0.0, -6.0]
     },
     "materials": {},
     "objects": {}
@@ -138,7 +135,7 @@ def generate_materials(JSON):
     return JSON
 
 
-def generate_box(JSON, size=30, colored=True, light=True, bright=False):
+def generate_box(JSON, size=14, colored=True, light=True, bright=False):
     JSON['objects']['boxFloor'] = {
         'type': 'plane',
         'normal': [0.0, 1.0, 0.0, -size / 4],
@@ -174,30 +171,6 @@ def generate_box(JSON, size=30, colored=True, light=True, bright=False):
     return JSON
 
 
-def gen_float(obj, values=None):
-    if isinstance(obj, dict):
-        for key, val in obj.items():
-            obj[key], values = gen_float(val, values)
-    elif isinstance(obj, list):
-        for i, val in enumerate(obj):
-            obj[i], values = gen_float(val, values)
-    elif isinstance(obj, str) and obj == "float":
-        minimum = 0
-        maximum = 1
-        if values is not None:
-            if isinstance(values, list):
-                if isinstance(values[0], list):
-                    minimum = values[0][0]
-                    maximum = values[0][1]
-                elif values[0] is not None:
-                    minimum = 0
-                    maximum = values[0]
-            else:
-                maximum = values
-        obj = (maximum - minimum) * random.random() + minimum
-    return obj, values[1:] if values and isinstance(values, list) else values
-
-
 def select_material(JSON, options='dgml'):
     shading = random.choice(options)
     if shading == 'd':
@@ -216,23 +189,79 @@ def select_material(JSON, options='dgml'):
             [x for x in JSON['materials'].keys() if x.startswith('light')])
 
 
-def generate_primative(JSON, shape=None, material=True, values=None):
+def generate_primitive(JSON, shape=None, material=True, rotate=True, translate=False):
     if shape is None:
-        shape = random.choice(list(PRIMATIVES.keys()))
-    base, _ = gen_float(PRIMATIVES[shape], values)
+        shape = random.choice(list(PRIMITIVES.keys()))
+    base = PRIMITIVES[shape]()
+    key = '{}-{}'.format(shape, random.randint(0, 9999))
     if material:
         base['material'] = select_material(
             JSON, options=material if isinstance(material, str) else 'dgml')
-    JSON['objects']['{}-{}'.format(shape, random.randint(0, 9999))] = base
+    if rotate:
+        base['rotation'] = [2 * np.pi * random.random(), 2 * np.pi *
+                            random.random(), 2 * np.pi * random.random()]
+    if translate:
+        base['position'] = [2 * random.random(), 2 *
+                            random.random(), 2 * random.random()]
+    JSON['objects'][key] = base
+    return key, JSON
+
+
+def generate_joint(JSON, count, material=True, rotate=True, translate=False, children=[]):
+    while count > 0:
+        key, JSON = generate_primitive(
+            JSON, material=False, rotate=True, translate=True)
+        children.append(key)
+        count -= 1
+    shape = random.choice(list(OPERATIONS.keys()))
+    key = '{}-{}'.format(shape, random.randint(0, 9999))
+    base = OPERATIONS[shape](children[0], children[1])
+    if rotate:
+        base['rotation'] = [2 * np.pi * random.random(), 2 * np.pi *
+                            random.random(), 2 * np.pi * random.random()]
+    if translate:
+        base['position'] = [2 * random.random(), 2 *
+                            random.random(), 2 * random.random()]
+    JSON['objects'][key] = base
+    children = children[2:]
+    children.append(key)
+    if len(children) > 1:
+        JSON = generate_joint(JSON, 0, material, rotate=True,
+                              translate=True, children=children)
+    else:
+        JSON['objects'][key]['material'] = select_material(
+            JSON, options=material)
     return JSON
 
 
 def main():
-    output = generate_materials(CORE)
-    output = generate_box(output)
-    output = generate_primative(output, values=2)
-    with open("box.json", "w") as file:
+    parser = ArgumentParser('trm-showcase')
+    parser.add_argument('-l', '--light', action='store_true',
+                        help='enables emissive materials')
+    parser.add_argument('-p', '--primitive', action='store_true',
+                        help='renders only a single primitives')
+    parser.add_argument('-n', '--num', default=3, type=int,
+                        help='number of primitives')
+    parser.add_argument('-c', '--count', default=1, type=int,
+                        help='number of scenes to generate')
+    parser.add_argument('-s', '--start', default=0, type=int,
+                        help='starting index for saving')
+    opts = parser.parse_args()
+    output = generate_materials(deepcopy(CORE))
+    output = generate_box(output, light=not opts.light)
+    with open("../example/{:04}.json".format(opts.start), "w") as file:
         json.dump(output, file)
+    for i in range(opts.start + 1, opts.start + opts.count):
+        output = generate_materials(deepcopy(CORE))
+        output = generate_box(output, light=not opts.light)
+        if opts.primitive:
+            _, output = generate_primitive(
+                output, material='l' if opts.light else 'dgm')
+        else:
+            output = generate_joint(
+                output, opts.num, material='l' if opts.light else 'dgm')
+        with open("../example/{:04}.json".format(i), "w") as file:
+            json.dump(output, file)
 
 
 if __name__ == "__main__":

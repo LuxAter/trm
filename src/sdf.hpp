@@ -94,6 +94,30 @@ struct Plane : Sdf {
   Vec4 norm;
 };
 
+struct MengerSponge : Sdf {
+  template <typename... Args>
+  MengerSponge(const std::size_t i, const Args &... args)
+      : Sdf(args...), iterations(i) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec3 q = abs(p) - Vec3(1.0f);
+    Float d = length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
+    Float s = 1.0f;
+    for (std::size_t i = 0; i < this->iterations; ++i) {
+      Vec3 a = mod(p * s, 2.0f) - 1.0f;
+      s *= 3.0f;
+      Vec3 r = abs(1.0f - 3.0f * abs(a));
+      Float da = max(r.x, r.y);
+      Float db = max(r.y, r.z);
+      Float dc = max(r.z, r.x);
+      Float c = (min(da, min(db, dc)) - 1.0f) / s;
+
+      d = max(d, c);
+    }
+    return d;
+  }
+  std::size_t iterations;
+};
+
 struct Elongate : Sdf {
   template <typename... Args>
   Elongate(const std::shared_ptr<Sdf> &a, const Vec3 &h, const Args &... args)
@@ -199,6 +223,8 @@ SDF_GEN(Box);
 SDF_GEN(Cylinder);
 SDF_GEN(Torus);
 SDF_GEN(Plane);
+
+SDF_GEN(MengerSponge);
 
 SDF_GEN(Elongate);
 SDF_GEN(Round);

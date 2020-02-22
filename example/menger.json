@@ -1,0 +1,1907 @@
+{
+  "spp": 64,
+  "resolution": [
+    1000,
+    1000
+  ],
+  "camera": {
+    "fov": 1.5707,
+    "center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "up": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "pos": [
+      0.0,
+      0.0,
+      -6.0
+    ]
+  },
+  "materials": {
+    "mirror": {
+      "shading": "specular"
+    },
+    "glass1.0": {
+      "shading": "refractive",
+      "ior": 1.0
+    },
+    "glass1.1": {
+      "shading": "refractive",
+      "ior": 1.1
+    },
+    "glass1.2": {
+      "shading": "refractive",
+      "ior": 1.2000000000000002
+    },
+    "glass1.3": {
+      "shading": "refractive",
+      "ior": 1.3000000000000003
+    },
+    "glass1.4": {
+      "shading": "refractive",
+      "ior": 1.4000000000000004
+    },
+    "glass1.5": {
+      "shading": "refractive",
+      "ior": 1.5000000000000004
+    },
+    "glass1.6": {
+      "shading": "refractive",
+      "ior": 1.6000000000000005
+    },
+    "glass1.7": {
+      "shading": "refractive",
+      "ior": 1.7000000000000006
+    },
+    "glass1.8": {
+      "shading": "refractive",
+      "ior": 1.8000000000000007
+    },
+    "glass1.9": {
+      "shading": "refractive",
+      "ior": 1.9000000000000008
+    },
+    "glass2.0": {
+      "shading": "refractive",
+      "ior": 2.000000000000001
+    },
+    "white": {
+      "shading": "diffuse",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "lightWhite5": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 5.0
+    },
+    "lightWhite10": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 10.0
+    },
+    "lightWhite15": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 15.0
+    },
+    "lightWhite20": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 20.0
+    },
+    "lightWhite25": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 25.0
+    },
+    "lightWhite30": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 30.0
+    },
+    "lightWhite35": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 35.0
+    },
+    "lightWhite40": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 40.0
+    },
+    "lightWhite45": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 45.0
+    },
+    "lightWhite50": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "emission": 50.0
+    },
+    "red": {
+      "shading": "diffuse",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ]
+    },
+    "lightRed5": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 5.0
+    },
+    "lightRed10": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 10.0
+    },
+    "lightRed15": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 15.0
+    },
+    "lightRed20": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 20.0
+    },
+    "lightRed25": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 25.0
+    },
+    "lightRed30": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 30.0
+    },
+    "lightRed35": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 35.0
+    },
+    "lightRed40": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 40.0
+    },
+    "lightRed45": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 45.0
+    },
+    "lightRed50": {
+      "shading": "emissive",
+      "color": [
+        0.9568627450980393,
+        0.2627450980392157,
+        0.21176470588235294
+      ],
+      "emission": 50.0
+    },
+    "pink": {
+      "shading": "diffuse",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ]
+    },
+    "lightPink5": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 5.0
+    },
+    "lightPink10": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 10.0
+    },
+    "lightPink15": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 15.0
+    },
+    "lightPink20": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 20.0
+    },
+    "lightPink25": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 25.0
+    },
+    "lightPink30": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 30.0
+    },
+    "lightPink35": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 35.0
+    },
+    "lightPink40": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 40.0
+    },
+    "lightPink45": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 45.0
+    },
+    "lightPink50": {
+      "shading": "emissive",
+      "color": [
+        0.9137254901960784,
+        0.11764705882352941,
+        0.38823529411764707
+      ],
+      "emission": 50.0
+    },
+    "purple": {
+      "shading": "diffuse",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ]
+    },
+    "lightPurple5": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 5.0
+    },
+    "lightPurple10": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 10.0
+    },
+    "lightPurple15": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 15.0
+    },
+    "lightPurple20": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 20.0
+    },
+    "lightPurple25": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 25.0
+    },
+    "lightPurple30": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 30.0
+    },
+    "lightPurple35": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 35.0
+    },
+    "lightPurple40": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 40.0
+    },
+    "lightPurple45": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 45.0
+    },
+    "lightPurple50": {
+      "shading": "emissive",
+      "color": [
+        0.611764705882353,
+        0.15294117647058825,
+        0.6901960784313725
+      ],
+      "emission": 50.0
+    },
+    "deepPurple": {
+      "shading": "diffuse",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ]
+    },
+    "lightDeepPurple5": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 5.0
+    },
+    "lightDeepPurple10": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 10.0
+    },
+    "lightDeepPurple15": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 15.0
+    },
+    "lightDeepPurple20": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 20.0
+    },
+    "lightDeepPurple25": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 25.0
+    },
+    "lightDeepPurple30": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 30.0
+    },
+    "lightDeepPurple35": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 35.0
+    },
+    "lightDeepPurple40": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 40.0
+    },
+    "lightDeepPurple45": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 45.0
+    },
+    "lightDeepPurple50": {
+      "shading": "emissive",
+      "color": [
+        0.403921568627451,
+        0.22745098039215686,
+        0.7176470588235294
+      ],
+      "emission": 50.0
+    },
+    "indigo": {
+      "shading": "diffuse",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ]
+    },
+    "lightIndigo5": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 5.0
+    },
+    "lightIndigo10": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 10.0
+    },
+    "lightIndigo15": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 15.0
+    },
+    "lightIndigo20": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 20.0
+    },
+    "lightIndigo25": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 25.0
+    },
+    "lightIndigo30": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 30.0
+    },
+    "lightIndigo35": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 35.0
+    },
+    "lightIndigo40": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 40.0
+    },
+    "lightIndigo45": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 45.0
+    },
+    "lightIndigo50": {
+      "shading": "emissive",
+      "color": [
+        0.24705882352941178,
+        0.3176470588235294,
+        0.7098039215686275
+      ],
+      "emission": 50.0
+    },
+    "blue": {
+      "shading": "diffuse",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ]
+    },
+    "lightBlue5": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 5.0
+    },
+    "lightBlue10": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 10.0
+    },
+    "lightBlue15": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 15.0
+    },
+    "lightBlue20": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 20.0
+    },
+    "lightBlue25": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 25.0
+    },
+    "lightBlue30": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 30.0
+    },
+    "lightBlue35": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 35.0
+    },
+    "lightBlue40": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 40.0
+    },
+    "lightBlue45": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 45.0
+    },
+    "lightBlue50": {
+      "shading": "emissive",
+      "color": [
+        0.12941176470588237,
+        0.5882352941176471,
+        0.9529411764705882
+      ],
+      "emission": 50.0
+    },
+    "paleBlue": {
+      "shading": "diffuse",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ]
+    },
+    "lightPaleBlue5": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 5.0
+    },
+    "lightPaleBlue10": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 10.0
+    },
+    "lightPaleBlue15": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 15.0
+    },
+    "lightPaleBlue20": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 20.0
+    },
+    "lightPaleBlue25": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 25.0
+    },
+    "lightPaleBlue30": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 30.0
+    },
+    "lightPaleBlue35": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 35.0
+    },
+    "lightPaleBlue40": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 40.0
+    },
+    "lightPaleBlue45": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 45.0
+    },
+    "lightPaleBlue50": {
+      "shading": "emissive",
+      "color": [
+        0.011764705882352941,
+        0.6627450980392157,
+        0.9568627450980393
+      ],
+      "emission": 50.0
+    },
+    "cyan": {
+      "shading": "diffuse",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ]
+    },
+    "lightCyan5": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 5.0
+    },
+    "lightCyan10": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 10.0
+    },
+    "lightCyan15": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 15.0
+    },
+    "lightCyan20": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 20.0
+    },
+    "lightCyan25": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 25.0
+    },
+    "lightCyan30": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 30.0
+    },
+    "lightCyan35": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 35.0
+    },
+    "lightCyan40": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 40.0
+    },
+    "lightCyan45": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 45.0
+    },
+    "lightCyan50": {
+      "shading": "emissive",
+      "color": [
+        0.0,
+        0.7372549019607844,
+        0.8313725490196079
+      ],
+      "emission": 50.0
+    },
+    "teal": {
+      "shading": "diffuse",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ]
+    },
+    "lightTeal5": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 5.0
+    },
+    "lightTeal10": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 10.0
+    },
+    "lightTeal15": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 15.0
+    },
+    "lightTeal20": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 20.0
+    },
+    "lightTeal25": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 25.0
+    },
+    "lightTeal30": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 30.0
+    },
+    "lightTeal35": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 35.0
+    },
+    "lightTeal40": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 40.0
+    },
+    "lightTeal45": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 45.0
+    },
+    "lightTeal50": {
+      "shading": "emissive",
+      "color": [
+        0.3411764705882353,
+        0.7803921568627451,
+        0.7215686274509804
+      ],
+      "emission": 50.0
+    },
+    "green": {
+      "shading": "diffuse",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ]
+    },
+    "lightGreen5": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 5.0
+    },
+    "lightGreen10": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 10.0
+    },
+    "lightGreen15": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 15.0
+    },
+    "lightGreen20": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 20.0
+    },
+    "lightGreen25": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 25.0
+    },
+    "lightGreen30": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 30.0
+    },
+    "lightGreen35": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 35.0
+    },
+    "lightGreen40": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 40.0
+    },
+    "lightGreen45": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 45.0
+    },
+    "lightGreen50": {
+      "shading": "emissive",
+      "color": [
+        0.2980392156862745,
+        0.6862745098039216,
+        0.3137254901960784
+      ],
+      "emission": 50.0
+    },
+    "paleGreen": {
+      "shading": "diffuse",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ]
+    },
+    "lightPaleGreen5": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 5.0
+    },
+    "lightPaleGreen10": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 10.0
+    },
+    "lightPaleGreen15": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 15.0
+    },
+    "lightPaleGreen20": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 20.0
+    },
+    "lightPaleGreen25": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 25.0
+    },
+    "lightPaleGreen30": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 30.0
+    },
+    "lightPaleGreen35": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 35.0
+    },
+    "lightPaleGreen40": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 40.0
+    },
+    "lightPaleGreen45": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 45.0
+    },
+    "lightPaleGreen50": {
+      "shading": "emissive",
+      "color": [
+        0.5450980392156862,
+        0.7647058823529411,
+        0.2901960784313726
+      ],
+      "emission": 50.0
+    },
+    "lime": {
+      "shading": "diffuse",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ]
+    },
+    "lightLime5": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 5.0
+    },
+    "lightLime10": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 10.0
+    },
+    "lightLime15": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 15.0
+    },
+    "lightLime20": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 20.0
+    },
+    "lightLime25": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 25.0
+    },
+    "lightLime30": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 30.0
+    },
+    "lightLime35": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 35.0
+    },
+    "lightLime40": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 40.0
+    },
+    "lightLime45": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 45.0
+    },
+    "lightLime50": {
+      "shading": "emissive",
+      "color": [
+        0.803921568627451,
+        0.8627450980392157,
+        0.2235294117647059
+      ],
+      "emission": 50.0
+    },
+    "yellow": {
+      "shading": "diffuse",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ]
+    },
+    "lightYellow5": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 5.0
+    },
+    "lightYellow10": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 10.0
+    },
+    "lightYellow15": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 15.0
+    },
+    "lightYellow20": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 20.0
+    },
+    "lightYellow25": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 25.0
+    },
+    "lightYellow30": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 30.0
+    },
+    "lightYellow35": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 35.0
+    },
+    "lightYellow40": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 40.0
+    },
+    "lightYellow45": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 45.0
+    },
+    "lightYellow50": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.9215686274509803,
+        0.23137254901960785
+      ],
+      "emission": 50.0
+    },
+    "amber": {
+      "shading": "diffuse",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ]
+    },
+    "lightAmber5": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 5.0
+    },
+    "lightAmber10": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 10.0
+    },
+    "lightAmber15": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 15.0
+    },
+    "lightAmber20": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 20.0
+    },
+    "lightAmber25": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 25.0
+    },
+    "lightAmber30": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 30.0
+    },
+    "lightAmber35": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 35.0
+    },
+    "lightAmber40": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 40.0
+    },
+    "lightAmber45": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 45.0
+    },
+    "lightAmber50": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.7568627450980392,
+        0.027450980392156862
+      ],
+      "emission": 50.0
+    },
+    "orange": {
+      "shading": "diffuse",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ]
+    },
+    "lightOrange5": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 5.0
+    },
+    "lightOrange10": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 10.0
+    },
+    "lightOrange15": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 15.0
+    },
+    "lightOrange20": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 20.0
+    },
+    "lightOrange25": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 25.0
+    },
+    "lightOrange30": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 30.0
+    },
+    "lightOrange35": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 35.0
+    },
+    "lightOrange40": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 40.0
+    },
+    "lightOrange45": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 45.0
+    },
+    "lightOrange50": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.596078431372549,
+        0.0
+      ],
+      "emission": 50.0
+    },
+    "deepOrange": {
+      "shading": "diffuse",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ]
+    },
+    "lightDeepOrange5": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 5.0
+    },
+    "lightDeepOrange10": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 10.0
+    },
+    "lightDeepOrange15": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 15.0
+    },
+    "lightDeepOrange20": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 20.0
+    },
+    "lightDeepOrange25": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 25.0
+    },
+    "lightDeepOrange30": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 30.0
+    },
+    "lightDeepOrange35": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 35.0
+    },
+    "lightDeepOrange40": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 40.0
+    },
+    "lightDeepOrange45": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 45.0
+    },
+    "lightDeepOrange50": {
+      "shading": "emissive",
+      "color": [
+        1.0,
+        0.3411764705882353,
+        0.13333333333333333
+      ],
+      "emission": 50.0
+    },
+    "brown": {
+      "shading": "diffuse",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ]
+    },
+    "lightBrown5": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 5.0
+    },
+    "lightBrown10": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 10.0
+    },
+    "lightBrown15": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 15.0
+    },
+    "lightBrown20": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 20.0
+    },
+    "lightBrown25": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 25.0
+    },
+    "lightBrown30": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 30.0
+    },
+    "lightBrown35": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 35.0
+    },
+    "lightBrown40": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 40.0
+    },
+    "lightBrown45": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 45.0
+    },
+    "lightBrown50": {
+      "shading": "emissive",
+      "color": [
+        0.4745098039215686,
+        0.3333333333333333,
+        0.2823529411764706
+      ],
+      "emission": 50.0
+    }
+  },
+  "objects": {
+    "boxFloor": {
+      "type": "plane",
+      "normal": [
+        0.0,
+        1.0,
+        0.0,
+        -3.5
+      ],
+      "material": "white"
+    },
+    "boxCeiling": {
+      "type": "plane",
+      "normal": [
+        0.0,
+        -1.0,
+        0.0,
+        -10.5
+      ],
+      "material": "lightWhite10"
+    },
+    "boxWallLeft": {
+      "type": "plane",
+      "normal": [
+        -1.0,
+        0.0,
+        0.0,
+        -7.0
+      ],
+      "material": "red"
+    },
+    "boxWallRight": {
+      "type": "plane",
+      "normal": [
+        1.0,
+        0.0,
+        0.0,
+        -7.0
+      ],
+      "material": "blue"
+    },
+    "boxWallBack": {
+      "type": "plane",
+      "normal": [
+        0.0,
+        0.0,
+        -1.0,
+        -7.0
+      ],
+      "material": "green"
+    },
+    "boxWallFront": {
+      "type": "plane",
+      "normal": [
+        0.0,
+        0.0,
+        1.0,
+        -7.0
+      ],
+      "material": "white"
+    },
+    "fractal": {
+      "type": "mengerSponge",
+      "iterations": 3,
+      "material": "white",
+      "scale": [2.0, 2.0, 2.0],
+      "rotation": [0.0, 0.52359, 0.0]
+    }
+  }
+}

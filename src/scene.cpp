@@ -1,7 +1,6 @@
 #include "scene.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -130,7 +129,6 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
         color = Vec3(getf(it->at("color").at(0)), getf(it->at("color").at(1)),
                      getf(it->at("color").at(2)));
       }
-      std::printf("EMIS: %f, IOR: %f\n", emission, ior);
       scene->materials.push_back(
           std::make_shared<trm::Material>(shading, color, emission, ior));
       material_index[it.key()] = scene->materials.back();
@@ -169,6 +167,10 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
             getf(it->at("normal").at(0)), getf(it->at("normal").at(1)),
             getf(it->at("normal").at(2)),
             it->at("normal").size() >= 4 ? getf(it->at("normal").at(3)) : 0.0f,
+            material_ptr));
+      } else if (type == "mengerSponge") {
+        scene->objects.push_back(sdfMengerSponge(
+            static_cast<std::size_t>(getf(it->at("iterations"))),
             material_ptr));
       } else if (type == "elongate") {
         scene->objects.push_back(sdfElongate(nullptr,
@@ -268,7 +270,6 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
   }
 
   for (auto &obj : linked_objects) {
-    std::cout << "HI!" << obj.first << object_index[obj.second[0]] << "<<<\n";
     obj.first->a = object_index[obj.second[0]];
     if (obj.second[1] != "")
       obj.first->b = object_index[obj.second[1]];
