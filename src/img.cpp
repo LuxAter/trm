@@ -6,6 +6,7 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "prof.hpp"
 
@@ -85,4 +86,7 @@ void write_file(const std::string &file_desc, const glm::uvec2 &res,
   } else if (ends_with(file_desc, ".jpg")) {
     stbi_write_jpg(file_desc.c_str(), res.x, res.y, 3, raw, 75);
   }
+}
+bool file_exists(const std::string &file) {
+  return access(file.c_str(), F_OK) != -1;
 }
