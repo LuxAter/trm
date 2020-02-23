@@ -1855,7 +1855,7 @@
         0.0,
         -10.5
       ],
-      "material": "lightWhite10"
+      "material": "white"
     },
     "boxWallLeft": {
       "type": "plane",
@@ -1896,6 +1896,11 @@
         -7.0
       ],
       "material": "white"
+    },
+    "lamp": {
+      "type": "sphere",
+      "radius": 1.0,
+      "material": "lightWhite50"
     },
     "fractal": {
       "type": "mengerSponge",
