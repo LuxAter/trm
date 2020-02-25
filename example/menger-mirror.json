@@ -1,9 +1,9 @@
 {
-  "spp": 128,
+  "spp": 64,
   "maximumDepth": 64,
   "resolution": [
-    2000,
-    2000
+    1000,
+    1000
   ],
   "camera": {
     "fov": 1.5707,
@@ -1899,8 +1899,8 @@
     },
     "fractal": {
       "type": "mengerSponge",
-      "iterations": 6,
-      "material": "white",
+      "iterations": 5,
+      "material": "mirror",
       "scale": [2.0, 2.0, 2.0],
       "rotation": [0.0, 0.52359, 0.0]
     }
