@@ -19,8 +19,8 @@ Float trm::Sdf::operator()(const Vec3 &p) const {
 }
 Vec3 trm::Sdf::normal(const Vec3 &p, const Float &ep) {
   Vec3 op = this->inv * Vec4(p, 1.0f);
-  return this->trans *
-         normalize(Vec4(this->dist(Vec3(op.x + ep, op.y, op.z)) -
+  return normalize(this->trans *
+                   Vec4(this->dist(Vec3(op.x + ep, op.y, op.z)) -
                             this->dist(Vec3(op.x - ep, op.y, op.z)),
                         this->dist(Vec3(op.x, op.y + ep, op.z)) -
                             this->dist(Vec3(op.x, op.y - ep, op.z)),

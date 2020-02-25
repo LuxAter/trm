@@ -93,6 +93,33 @@ struct Plane : Sdf {
   }
   Vec4 norm;
 };
+struct Pyramid : Sdf {
+  template <typename... Args>
+  Pyramid(const Float &h, const Args &... args) : Sdf(args...), height(h) {}
+  inline Float dist(const Vec3 &p) const override {
+    Float m2 = height * height + 0.25f;
+    Vec3 p1 = p;
+    p1.x = abs(p1.x);
+    p1.z = abs(p1.z);
+    if(p1.z > p1.x) std::swap(p1.x, p1.z);
+    p1.x -= 0.5f;
+    p1.z -= 0.5f;
+
+    Vec3 q =
+        Vec3(p1.z, height * p1.y - 0.5f * p1.x, height * p1.x + 0.5f * p1.y);
+
+    Float s = max(-q.x, 0.0f);
+    Float t = clamp((q.y - 0.5f * p1.z) / (m2 + 0.25f), 0.0f, 1.0f);
+
+    Float a = m2 * (q.x + s) * (q.x + s) + q.y * q.y;
+    Float b = m2 * (q.x + 0.5f * t) * (q.x + 0.5f * t) +
+              (q.y - m2 * t) * (q.y - m2 * t);
+
+    Float d2 = min(q.y, -q.x * m2 - q.y * 0.5f) > 0.0f ? 0.0f : min(a, b);
+    return sqrt((d2 + q.z * q.z) / m2) * sign(max(q.z, -p1.y));
+  }
+  Float height;
+};
 
 struct MengerSponge : Sdf {
   template <typename... Args>
@@ -223,6 +250,7 @@ SDF_GEN(Box);
 SDF_GEN(Cylinder);
 SDF_GEN(Torus);
 SDF_GEN(Plane);
+SDF_GEN(Pyramid);
 
 SDF_GEN(MengerSponge);
 

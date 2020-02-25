@@ -108,6 +108,7 @@ Vec3 trace(const Ray &r, Float *safe_depth, std::size_t depth = 0) {
   Float rr_factor = 1.0;
   Vec3 color(0.0f);
   if (depth >= settings.maximum_depth) {
+    return color;
     const Float rr_stop_prop = 0.1;
     if (trm::frand() <= rr_stop_prop) {
       return color;

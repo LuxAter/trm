@@ -1,3 +1,4 @@
+#define GLM_SWIZZLE
 #define GLM_FORCE_SWIZZLE
 #define GLM_LEFT_HANDED
 

@@ -168,6 +168,9 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
             getf(it->at("normal").at(2)),
             it->at("normal").size() >= 4 ? getf(it->at("normal").at(3)) : 0.0f,
             material_ptr));
+      } else if(type == "pyramid") {
+        scene->objects.push_back(
+            sdfPyramid(getf(it->at("height")), material_ptr));
       } else if (type == "mengerSponge") {
         scene->objects.push_back(sdfMengerSponge(
             static_cast<std::size_t>(getf(it->at("iterations"))),
