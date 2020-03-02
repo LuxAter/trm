@@ -174,28 +174,50 @@ void render(const std::string &file_path) {
   Float filmz = settings.resolution.x / (2.0f * tan(scene.camera.fov / 2.0f));
   Vec3 origin = view * Vec4(0.0f, 0.0f, 0.0f, 1.0f);
   settings.inter_pixel_arc = sqrt(2.0f) / filmz;
-#pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
-  for (std::size_t i = 0; i < settings.resolution.x * settings.resolution.y;
-       ++i) {
-    PROF_SCOPED("pixel", "renderer");
-    std::size_t x = i % settings.resolution.x;
-    std::size_t y = i / settings.resolution.x;
-    vec3 color(0.0f, 0.0f, 0.0f);
-    Float safe_depth = 0.0f;
-    for (std::size_t s = 0; s < settings.spp; ++s) {
-      Ray ray(origin,
-              view * Vec4(x - settings.resolution.x / 2.0f + trm::frand(),
-                          y - settings.resolution.y / 2.0f + trm::frand(),
-                          filmz, 0.0f));
-      color += trace(ray, &safe_depth) / Float(settings.spp);
+
+  unsigned resx = settings.resolution.x, resy = settings.resolution.y;
+  unsigned spp = settings.spp;
+
+// #pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
+#pragma acc parallel loop copy(buffer)
+  for (std::size_t j = 0; j < resx * resy / 128; ++j) {
+    for (std::size_t k = 0; k < 128; ++k) {
+      std::size_t i = j * 128 + k;
+      PROF_SCOPED("pixel", "renderer");
+      std::size_t x = i % resx;
+      std::size_t y = i / resx;
+      vec3 color(0.0f, 0.0f, 0.0f);
+      Float safe_depth = 0.0f;
+      for (std::size_t s = 0; s < spp; ++s) {
+        Ray ray(origin,
+                view * Vec4(x - resx / 2.0f + trm::frand(),
+                            y - resy / 2.0f + trm::frand(), filmz, 0.0f));
+        color += trace(ray, &safe_depth) / Float(spp);
+      }
+      buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
+      buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
+      buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
     }
-    buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
-    buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
-    buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
-#pragma omp critical
-    if (i % 128 == 0)
-      bar.update(128);
   }
+  //   for (std::size_t i = 0; i < resx * resy; ++i) {
+  //     PROF_SCOPED("pixel", "renderer");
+  //     std::size_t x = i % resx;
+  //     std::size_t y = i / resx;
+  //     vec3 color(0.0f, 0.0f, 0.0f);
+  //     Float safe_depth = 0.0f;
+  //     for (std::size_t s = 0; s < spp; ++s) {
+  //       Ray ray(origin, view * Vec4(x - resx / 2.0f + trm::frand(),
+  //                                   y - resy / 2.0f + trm::frand(), filmz,
+  //                                   0.0f));
+  //       color += trace(ray, &safe_depth) / Float(spp);
+  //     }
+  //     buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
+  //     buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
+  //     buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
+  // // #pragma omp critical
+  // //     if (i % 128 == 0)
+  // //       bar.update(128);
+  //   }
   write_file(file_path, settings.resolution, buffer);
   if (buffer != nullptr)
     free(buffer);

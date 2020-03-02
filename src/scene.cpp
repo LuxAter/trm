@@ -168,11 +168,15 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
             getf(it->at("normal").at(2)),
             it->at("normal").size() >= 4 ? getf(it->at("normal").at(3)) : 0.0f,
             material_ptr));
-      } else if(type == "pyramid") {
+      } else if (type == "pyramid") {
         scene->objects.push_back(
             sdfPyramid(getf(it->at("height")), material_ptr));
       } else if (type == "mengerSponge") {
         scene->objects.push_back(sdfMengerSponge(
+            static_cast<std::size_t>(getf(it->at("iterations"))),
+            material_ptr));
+      } else if (type == "serpinskiTetrahedron") {
+        scene->objects.push_back(sdfSerpinskiTetrahedron(
             static_cast<std::size_t>(getf(it->at("iterations"))),
             material_ptr));
       } else if (type == "elongate") {
@@ -237,10 +241,41 @@ bool trm::load_json(const std::string &file, RenderSettings *settings,
       }
       if (it->contains("rotation")) {
         if (it->at("rotation").is_array()) {
-          scene->objects.back()
-              ->rotate(getf(it->at("rotation").at(0)), Vec3(1.0f, 0.0f, 0.0f))
-              ->rotate(getf(it->at("rotation").at(1)), Vec3(0.0f, 1.0f, 0.0f))
-              ->rotate(getf(it->at("rotation").at(2)), Vec3(0.0f, 0.0f, 1.0f));
+          if (it->at("rotation").at(0).is_number()) {
+            scene->objects.back()
+                ->rotate(getf(it->at("rotation").at(0)), Vec3(1.0f, 0.0f, 0.0f))
+                ->rotate(getf(it->at("rotation").at(1)), Vec3(0.0f, 1.0f, 0.0f))
+                ->rotate(getf(it->at("rotation").at(2)),
+                         Vec3(0.0f, 0.0f, 1.0f));
+          } else {
+            for (auto &sit : it->at("rotation")) {
+              if (sit.is_array()) {
+                scene->objects.back()
+                    ->rotate(getf(sit.at(0)), Vec3(1.0f, 0.0f, 0.0f))
+                    ->rotate(getf(sit.at(1)), Vec3(0.0f, 1.0f, 0.0f))
+                    ->rotate(getf(sit.at(2)), Vec3(0.0f, 0.0f, 1.0f));
+              } else if (sit.is_object()) {
+                if (sit.contains("x")) {
+                  scene->objects.back()->rotate(getf(sit.at("x")),
+                                                Vec3(1.0f, 0.0f, 0.0f));
+                }
+                if (sit.contains("y")) {
+                  scene->objects.back()->rotate(getf(sit.at("y")),
+                                                Vec3(0.0f, 1.0f, 0.0f));
+                }
+                if (sit.contains("z")) {
+                  scene->objects.back()->rotate(getf(sit.at("z")),
+                                                Vec3(0.0f, 0.0f, 1.0f));
+                }
+                if (sit.contains("angle") && sit.contains("axis")) {
+                  scene->objects.back()->rotate(
+                      getf(sit.at("angle")), Vec3(getf(sit.at("axis").at(0)),
+                                                  getf(sit.at("axis").at(1)),
+                                                  getf(sit.at("axis").at(2))));
+                }
+              }
+            }
+          }
         } else {
           nlohmann::json rotate = it->at("rotation");
           if (rotate.contains("x")) {

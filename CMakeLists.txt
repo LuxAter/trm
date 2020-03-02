@@ -120,12 +120,18 @@ target_link_libraries(trm glm::glm fmt::fmt nlohmann_json::nlohmann_json)
 # THREAD COMPUTE
 # ##############################################################################
 find_package(OpenMP QUIET)
-if(OpenMP_CXX_FOUND AND HPC)
+find_package(OpenACC QUIET)
+if(OpenACC_CXX_FOUND AND HPC)
+  target_link_libraries(trm ${OpenACC_CXX_LIBRARIES})
+  target_compile_options(trm PUBLIC ${OpenACC_CXX_FLAGS})
+  target_link_options(trm PUBLIC ${OpenACC_CXX_FLAGS})
+  message(STATUS "Using OpenACC ${OpenACC_CXX_FLAGS}")
+elseif(OpenMP_CXX_FOUND AND HPC)
   target_link_libraries(trm ${OpenMP_CXX_LIBRARIES})
   target_compile_options(trm PUBLIC ${OpenMP_CXX_FLAGS})
   message(STATUS "Using OpenMP ${OpenMP_CXX_FLAGS}")
 elseif(HPC)
-  message(STATUS "Failed to load OpenMP")
+  message(STATUS "Failed to load OpenACC or OpenMP")
 endif()
 
 # ##############################################################################

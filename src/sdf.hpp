@@ -101,7 +101,8 @@ struct Pyramid : Sdf {
     Vec3 p1 = p;
     p1.x = abs(p1.x);
     p1.z = abs(p1.z);
-    if(p1.z > p1.x) std::swap(p1.x, p1.z);
+    if (p1.z > p1.x)
+      std::swap(p1.x, p1.z);
     p1.x -= 0.5f;
     p1.z -= 0.5f;
 
@@ -141,6 +142,36 @@ struct MengerSponge : Sdf {
       d = max(d, c);
     }
     return d;
+  }
+  std::size_t iterations;
+};
+struct SerpinskiTetrahedron : Sdf {
+  template <typename... Args>
+  SerpinskiTetrahedron(const std::size_t i, const Args &... args)
+      : Sdf(args...), iterations(i) {}
+  inline Float dist(const Vec3 &p) const override {
+    Vec3 q = p;
+    std::size_t i = 0;
+    while (i < this->iterations) {
+      if (q.x + q.y < 0) {
+        Float tmp = -q.x;
+        q.x = -q.y;
+        q.y = tmp;
+      }
+      if (q.x + q.z < 0) {
+        Float tmp = -q.x;
+        q.x = -q.z;
+        q.z = tmp;
+      }
+      if (q.y + q.z < 0) {
+        Float tmp = -q.y;
+        q.y = -q.z;
+        q.z = tmp;
+      }
+      q = q * 2.0f - Vec3(1.0f);
+      i++;
+    }
+    return (length(q)) * pow(2.0f, -Float(i));
   }
   std::size_t iterations;
 };
@@ -253,6 +284,7 @@ SDF_GEN(Plane);
 SDF_GEN(Pyramid);
 
 SDF_GEN(MengerSponge);
+SDF_GEN(SerpinskiTetrahedron);
 
 SDF_GEN(Elongate);
 SDF_GEN(Round);

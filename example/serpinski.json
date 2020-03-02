@@ -1,9 +1,9 @@
 {
-  "spp": 128,
-  "maximumDepth": 32,
+  "spp": 8,
+  "maximumDepth": 8,
   "resolution": [
-    2000,
-    2000
+    200,
+    200
   ],
   "camera": {
     "fov": 1.5707,
@@ -1839,70 +1839,45 @@
   "objects": {
     "boxFloor": {
       "type": "plane",
-      "normal": [
-        0.0,
-        1.0,
-        0.0,
-        -3.5
-      ],
+      "normal": [ 0.0, 1.0, 0.0, -3.5 ],
       "material": "white"
     },
     "boxCeiling": {
       "type": "plane",
-      "normal": [
-        0.0,
-        -1.0,
-        0.0,
-        -10.5
-      ],
-      "material": "lightWhite10"
+      "normal": [ 0.0, -1.0, 0.0, -10.5 ],
+      "material": "lightWhite20"
     },
     "boxWallLeft": {
       "type": "plane",
-      "normal": [
-        -1.0,
-        0.0,
-        0.0,
-        -7.0
-      ],
+      "normal": [ -1.0, 0.0, 0.0, -7.0 ],
       "material": "red"
     },
     "boxWallRight": {
       "type": "plane",
-      "normal": [
-        1.0,
-        0.0,
-        0.0,
-        -7.0
-      ],
+      "normal": [ 1.0, 0.0, 0.0, -7.0 ],
       "material": "blue"
     },
     "boxWallBack": {
       "type": "plane",
-      "normal": [
-        0.0,
-        0.0,
-        -1.0,
-        -7.0
-      ],
+      "normal": [ 0.0, 0.0, -1.0, -7.0 ],
       "material": "green"
     },
     "boxWallFront": {
       "type": "plane",
-      "normal": [
-        0.0,
-        0.0,
-        1.0,
-        -7.0
-      ],
+      "normal": [ 0.0, 0.0, 1.0, -7.0 ],
       "material": "white"
     },
     "tet": {
-      "type": "pyramid",
-      "height": 1.0,
-      "scale": [5.0, 5.0, 5.0],
-      "position": [0.0, -1.0, 0.0],
-      "rotation": [0.0, 0.52359, 0.0],
+      "type": "serpinskiTetrahedron",
+      "iterations": 50,
+      "scale": [ 2.2, 2.2, 2.2 ],
+      "rotation": [
+        {
+          "axis": [ -1, 0, 1 ],
+          "angle": 0.9
+        },
+        [0.0, 0.6, 0.0]
+      ],
       "material": "white"
     }
   }
