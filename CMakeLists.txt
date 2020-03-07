@@ -120,7 +120,7 @@ target_link_libraries(trm glm::glm fmt::fmt nlohmann_json::nlohmann_json)
 # THREAD COMPUTE
 # ##############################################################################
 find_package(OpenMP QUIET)
-find_package(OpenACC QUIET)
+# find_package(OpenACC QUIET)
 if(OpenACC_CXX_FOUND AND HPC)
   target_link_libraries(trm ${OpenACC_CXX_LIBRARIES})
   target_compile_options(trm PUBLIC ${OpenACC_CXX_FLAGS})

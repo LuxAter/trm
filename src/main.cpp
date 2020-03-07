@@ -178,46 +178,44 @@ void render(const std::string &file_path) {
   unsigned resx = settings.resolution.x, resy = settings.resolution.y;
   unsigned spp = settings.spp;
 
-// #pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
-#pragma acc parallel loop copy(buffer)
-  for (std::size_t j = 0; j < resx * resy / 128; ++j) {
-    for (std::size_t k = 0; k < 128; ++k) {
-      std::size_t i = j * 128 + k;
-      PROF_SCOPED("pixel", "renderer");
-      std::size_t x = i % resx;
-      std::size_t y = i / resx;
-      vec3 color(0.0f, 0.0f, 0.0f);
-      Float safe_depth = 0.0f;
-      for (std::size_t s = 0; s < spp; ++s) {
-        Ray ray(origin,
-                view * Vec4(x - resx / 2.0f + trm::frand(),
-                            y - resy / 2.0f + trm::frand(), filmz, 0.0f));
-        color += trace(ray, &safe_depth) / Float(spp);
-      }
-      buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
-      buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
-      buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
-    }
-  }
-  //   for (std::size_t i = 0; i < resx * resy; ++i) {
+  // for (std::size_t j = 0; j < resx * resy / 128; ++j) {
+  //   for (std::size_t k = 0; k < 128; ++k) {
+  //     std::size_t i = j * 128 + k;
   //     PROF_SCOPED("pixel", "renderer");
   //     std::size_t x = i % resx;
   //     std::size_t y = i / resx;
   //     vec3 color(0.0f, 0.0f, 0.0f);
   //     Float safe_depth = 0.0f;
   //     for (std::size_t s = 0; s < spp; ++s) {
-  //       Ray ray(origin, view * Vec4(x - resx / 2.0f + trm::frand(),
-  //                                   y - resy / 2.0f + trm::frand(), filmz,
-  //                                   0.0f));
+  //       Ray ray(origin,
+  //               view * Vec4(x - resx / 2.0f + trm::frand(),
+  //                           y - resy / 2.0f + trm::frand(), filmz, 0.0f));
   //       color += trace(ray, &safe_depth) / Float(spp);
   //     }
   //     buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
   //     buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
   //     buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
-  // // #pragma omp critical
-  // //     if (i % 128 == 0)
-  // //       bar.update(128);
   //   }
+  // }
+#pragma omp parallel for schedule(dynamic, 256) shared(buffer, bar)
+  for (std::size_t i = 0; i < resx * resy; ++i) {
+    PROF_SCOPED("pixel", "renderer");
+    std::size_t x = i % resx;
+    std::size_t y = i / resx;
+    vec3 color(0.0f, 0.0f, 0.0f);
+    Float safe_depth = 0.0f;
+    for (std::size_t s = 0; s < spp; ++s) {
+      Ray ray(origin, view * Vec4(x - resx / 2.0f + trm::frand(),
+                                  y - resy / 2.0f + trm::frand(), filmz, 0.0f));
+      color += trace(ray, &safe_depth) / Float(spp);
+    }
+    buffer[(i * 3) + 0] = clamp(color.r, 0.0f, 1.0f) * 255;
+    buffer[(i * 3) + 1] = clamp(color.g, 0.0f, 1.0f) * 255;
+    buffer[(i * 3) + 2] = clamp(color.b, 0.0f, 1.0f) * 255;
+#pragma omp critical
+    if (i % 128 == 0)
+      bar.update(128);
+  }
   write_file(file_path, settings.resolution, buffer);
   if (buffer != nullptr)
     free(buffer);
@@ -279,7 +277,7 @@ int main(int argc, char *argv[]) {
     settings.spp = 32;
   }
   if (settings.output_fmt == "") {
-    settings.output_fmt = "out/{frame:03}.png";
+    settings.output_fmt = "out/{source}.png";
   }
   PROF_END();
 
@@ -307,10 +305,17 @@ int main(int argc, char *argv[]) {
               scene.camera.up.y, scene.camera.up.z);
   std::printf("  Objects:   %lu\n", scene.objects.size());
   std::printf("  Materials: %lu\n", scene.materials.size());
-  render("out/" +
-         json_file.substr(json_file.rfind('/') + 1,
-                          json_file.rfind('.') - json_file.rfind('/') - 1) +
-         ".png");
+  render(fmt::format(
+      settings.output_fmt,
+      fmt::arg("spp", settings.spp),
+      fmt::arg("res", fmt::format("{}-{}", settings.resolution.x, settings.resolution.y)),
+      fmt::arg("source", json_file.substr(json_file.rfind('/') + 1,
+                                          json_file.rfind('.') -
+                                              json_file.rfind('/') - 1))));
+  // render("out/" +
+  //        json_file.substr(json_file.rfind('/') + 1,
+  //                         json_file.rfind('.') - json_file.rfind('/') - 1) +
+  //        ".png");
   PROF_END();
 
   return 0;
