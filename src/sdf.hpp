@@ -17,6 +17,7 @@ struct Sdf : std::enable_shared_from_this<Sdf> {
   Sdf(const std::shared_ptr<Sdf> &a, const std::shared_ptr<Sdf> &b = nullptr);
   Sdf(const std::shared_ptr<Material> &mat, const std::shared_ptr<Sdf> &a,
       const std::shared_ptr<Sdf> &b = nullptr);
+  virtual ~Sdf() {}
 
   Float operator()(const Vec3 &p) const;
   Vec3 normal(const Vec3 &p,
